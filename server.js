@@ -1400,12 +1400,14 @@ const httpServer = http.createServer(async (req, res) => {
           sql: 'INSERT INTO magic_tokens (token, email, expires_at) VALUES (?,?,?)',
           args: [token, email.toLowerCase().trim(), expiresAt]
         });
+        console.log('[account] Magic token created for:', email.toLowerCase().trim());
 
+        const emailLower = email.toLowerCase().trim();
         const loginUrl = (process.env.SITE_URL || 'https://alkdiosp34.github.io/tantracker3000-pro') + '/account.html?token=' + token;
 
         // Send magic link email
         await sendEmail({
-          to: email,
+          to: emailLower,
           subject: 'Your TexTrack login link',
           html: `
             <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#0a0a0a;color:#ccc;padding:32px;border-radius:8px;">
