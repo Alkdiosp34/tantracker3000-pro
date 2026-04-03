@@ -1,7 +1,7 @@
 {
-  "name": "tantracker3000-pro",
-  "version": "1.0.0",
-  "description": "TanTracker3000 Pro — Commercial GPS Tracking Platform",
+  "name": "textrack-relay",
+  "version": "2.0.0",
+  "description": "TexTrack vehicle tracking relay server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
