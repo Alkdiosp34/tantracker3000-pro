@@ -356,6 +356,10 @@ const httpServer = http.createServer(async (req, res) => {
           } catch(e) { console.error('[stripe] Cancellation handler error:', e.message); }
         }
       }
+       res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('ok');
+    });
+    return;
+  }
 
   // ── HISTORY API ─────────────────────────────────────────────
   if (url.pathname === '/history' && req.method === 'GET') {
