@@ -430,6 +430,18 @@ footer {
           <button class="cmd-btn" id="btnGmaps" onclick="openGoogleMaps()" style="opacity:0.4;cursor:not-allowed;">
             <span class="btn-icon">📍</span> OPEN IN GOOGLE MAPS
           </button>
+          <button class="cmd-btn" id="voiceToggle" onclick="toggleVoice()" style="font-size:11px;">
+            <span class="btn-icon">🔇</span> VOICE OFF
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">▸ Emergency</div>
+        <div class="btn-group">
+          <button class="cmd-btn danger" id="recoveryBtn" onclick="handleRecoveryTap()" style="background:rgba(204,51,51,0.08);">
+            <span class="btn-icon">⚠</span> RECOVER VEHICLE (tap 3x)
+          </button>
         </div>
       </div>
 
@@ -884,7 +896,7 @@ function updateCarPosition(lat, lon, mph, acc, msg) {
   pingsRx++;
   document.getElementById('fPings').textContent = 'PINGS: ' + pingsRx;
   const rateEl = document.getElementById('dPingRate');
-  if (rateEl) rateEl.textContent = (msg && msg.moving) ? 'EVERY 5s' : 'EVERY 60s';
+  if (rateEl) rateEl.textContent = (msg && msg.moving) ? 'EVERY 15s' : 'EVERY 2m';
   document.getElementById('lastSeen').textContent = 'LAST UPDATE: ' + new Date().toLocaleTimeString('en-US',{hour12:false});
 
   // Auto-follow: keep car in view
@@ -1071,6 +1083,8 @@ function updateDirectionsPanel(result) {
         <div class="turn-dist">${step.dist}</div>
       </div>`;
     list.appendChild(div);
+    // Speak the next upcoming direction
+    if (i === 0) speakDirection(step.text);
   });
 }
 
@@ -1185,6 +1199,11 @@ function handleMsg(msg) {
   if (msg.type === 'voltage_alert') handleVoltageAlert(msg);
   if (msg.type === 'webrtc_answer') handleAnswer(msg);
   if (msg.type === 'ice_candidate') handleIce(msg);
+  if (msg.type === 'recovery_status') {
+    recoveryActive = msg.active;
+    if (msg.active) showRecoveryUI({});
+    else hideRecoveryUI();
+  }
 }
 
 function sendCmd(type, extra = {}) {
@@ -1459,12 +1478,150 @@ function copyTransferLink() {
   });
 }
 
+
+// ════════════════════════════════════════════════
+// VOICE NAVIGATION (directions only, toggle on/off)
+// Uses browser built-in TTS — zero data cost
+// ════════════════════════════════════════════════
+let voiceEnabled = localStorage.getItem('tt3k_voice') === 'true';
+let voiceReady = false;
+let lastSpokenInstruction = '';
+
+function initVoice() {
+  if (!('speechSynthesis' in window)) return;
+  voiceReady = true;
+  const warmup = new SpeechSynthesisUtterance('');
+  warmup.volume = 0;
+  speechSynthesis.speak(warmup);
+}
+
+function speakDirection(text) {
+  if (!voiceEnabled || !voiceReady) return;
+  if (!text || text === lastSpokenInstruction) return;
+  lastSpokenInstruction = text;
+  speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  utterance.volume = 1.0;
+  const voices = speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google'))
+                 || voices.find(v => v.lang.startsWith('en'));
+  if (preferred) utterance.voice = preferred;
+  speechSynthesis.speak(utterance);
+}
+
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  localStorage.setItem('tt3k_voice', voiceEnabled);
+  const btn = document.getElementById('voiceToggle');
+  if (btn) {
+    btn.classList.toggle('active-track', voiceEnabled);
+    btn.textContent = voiceEnabled ? '\u{1F50A} VOICE ON' : '\u{1F507} VOICE OFF';
+  }
+  if (voiceEnabled && !voiceReady) initVoice();
+  if (voiceEnabled) speakDirection('Voice navigation enabled.');
+}
+
+if ('speechSynthesis' in window) { speechSynthesis.onvoiceschanged = () => {}; }
+
+// ════════════════════════════════════════════════
+// RECOVERY MODE (triple-tap to activate/deactivate)
+// ════════════════════════════════════════════════
+let recoveryActive = false;
+let recoveryShareUrl = null;
+let recoveryTapCount = 0;
+let recoveryTapTimer = null;
+
+function handleRecoveryTap() {
+  recoveryTapCount++;
+  if (recoveryTapTimer) clearTimeout(recoveryTapTimer);
+  if (recoveryTapCount >= 3) {
+    recoveryTapCount = 0;
+    if (recoveryActive) stopRecovery();
+    else startRecovery();
+    return;
+  }
+  recoveryTapTimer = setTimeout(() => { recoveryTapCount = 0; }, 1500);
+}
+
+async function startRecovery() {
+  try {
+    const resp = await fetch(SERVER_URL + '/recovery/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: CLIENT_TOKEN })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      recoveryActive = true;
+      recoveryShareUrl = data.share_url;
+      showRecoveryUI(data);
+    }
+  } catch(e) { console.error('[recovery] Start failed:', e); }
+}
+
+async function stopRecovery() {
+  try {
+    await fetch(SERVER_URL + '/recovery/stop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: CLIENT_TOKEN })
+    });
+  } catch(e) {}
+  recoveryActive = false;
+  recoveryShareUrl = null;
+  hideRecoveryUI();
+}
+
+function showRecoveryUI(data) {
+  let bar = document.getElementById('recoveryBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'recoveryBar';
+    bar.innerHTML = '<div style="background:#cc3333;color:#fff;padding:10px 16px;font-family:\'Share Tech Mono\',monospace;font-size:11px;display:flex;justify-content:space-between;align-items:center;letter-spacing:1px;position:fixed;top:0;left:0;right:0;z-index:9999;animation:recoveryPulse 2s ease-in-out infinite;">' +
+      '<span>\u26A0 RECOVERY MODE ACTIVE</span>' +
+      '<div style="display:flex;gap:8px;">' +
+      '<button onclick="copyShareLink()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:4px 12px;font-size:10px;font-family:inherit;cursor:pointer;border-radius:3px;">COPY LINK</button>' +
+      '<button onclick="handleRecoveryTap();handleRecoveryTap();handleRecoveryTap();" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:4px 12px;font-size:10px;font-family:inherit;cursor:pointer;border-radius:3px;">STOP</button>' +
+      '</div></div>';
+    document.body.appendChild(bar);
+    if (!document.getElementById('recoveryStyle')) {
+      const s = document.createElement('style');
+      s.id = 'recoveryStyle';
+      s.textContent = '@keyframes recoveryPulse { 0%,100%{opacity:1} 50%{opacity:0.7} }';
+      document.head.appendChild(s);
+    }
+  }
+  bar.style.display = 'block';
+  if (typeof map !== 'undefined' && lastLat) map.setView([lastLat, lastLon], 16);
+}
+
+function hideRecoveryUI() {
+  const bar = document.getElementById('recoveryBar');
+  if (bar) bar.style.display = 'none';
+}
+
+function copyShareLink() {
+  if (!recoveryShareUrl) return;
+  navigator.clipboard.writeText(recoveryShareUrl).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = 'COPIED!';
+    setTimeout(() => btn.textContent = orig, 2000);
+  }).catch(() => { prompt('Share this link:', recoveryShareUrl); });
+}
+
 function initApp() {
   if (typeof L !== 'undefined') {
     initMap();
     connectWS();
     startYourLocation();
     showInstallPrompt();
+    if (voiceEnabled) initVoice();
+    // Update voice button state on load
+    const vb = document.getElementById('voiceToggle');
+    if (vb && voiceEnabled) { vb.classList.add('active-track'); vb.innerHTML = '<span class="btn-icon">\u{1F50A}</span> VOICE ON'; }
   } else {
     window._mapReady = function() {
       initMap();

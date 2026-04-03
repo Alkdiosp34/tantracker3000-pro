@@ -334,11 +334,13 @@ footer {
 // ════════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════════
-const WS_URL = 'wss://tantracker3000-pro.onrender.com';
-const CLIENT_TOKEN = 'tt3k-6b013c92cface5653bcd4485'; // unique per customer — never share
+const WS_URL = 'wss://tantracker3000-pro1.onrender.com';
+const CLIENT_TOKEN = new URLSearchParams(window.location.search).get('token') || 'tt3k-6b013c92cface5653bcd4485'; // reads from URL ?token=
 // Adaptive ping intervals
-const PING_MOVING_MS  = 5000;   // 5s when moving
-const PING_PARKED_MS  = 60000;  // 60s when stationary
+const PING_MOVING_MS  = 15000;  // 15s when moving (saves ~66% data vs 5s)
+const PING_PARKED_MS  = 120000; // 2 min when parked (saves ~50% data vs 60s)
+const PING_RECOVERY_MS = 10000; // 10s in recovery mode
+let recoveryMode = false;
 const MOVE_THRESHOLD_M = 10;    // meters of movement to count as "moving"
 const MOVE_SPEED_MPH   = 2;     // or if GPS speed exceeds this
 
@@ -674,10 +676,12 @@ function schedulePing(immediate) {
   clearTimeout(pingTimer);
   if (immediate) {
     sendLocation();
-  } else {
-    const interval = isMoving ? PING_MOVING_MS : PING_PARKED_MS;
-    pingTimer = setTimeout(() => { sendLocation(); schedulePing(false); }, interval);
   }
+  let interval;
+  if (recoveryMode) { interval = PING_RECOVERY_MS; }
+  else if (isMoving) { interval = PING_MOVING_MS; }
+  else { interval = PING_PARKED_MS; }
+  pingTimer = setTimeout(() => { sendLocation(); schedulePing(false); }, interval);
 }
 
 function sendLocation() {
@@ -702,7 +706,7 @@ function sendLocation() {
 
 function updatePingRateDisplay() {
   const el = document.getElementById('ping');
-  if (el) el.textContent = isMoving ? '5s ▶' : '60s ■';
+  if (el) el.textContent = recoveryMode ? '10s ⚠' : isMoving ? '15s ▶' : '120s ■';
 }
 
 function haversineM(lat1, lon1, lat2, lon2) {
@@ -865,8 +869,22 @@ function handleCommand(msg) {
     dbg('MSG RECEIVED: ' + msg.type);
     dbg('phoneBatteryMode=' + phoneBatteryMode + ' appSleeping=' + appSleeping);
     try { if (phoneBatteryMode || appSleeping) wakeForCommand(); } catch(e) { dbg('wakeForCommand ERR: ' + e.message); }
-    if (msg.type !== 'ice_candidate') showAlert(msg.type.toUpperCase() + ' COMMAND');
+    if (msg.type !== 'ice_candidate' && msg.type !== 'recovery_mode' && msg.type !== 'token_revoked') showAlert(msg.type.toUpperCase() + ' COMMAND');
     if (msg.type === 'screen_off') { dbg('SCREEN OFF'); releaseWakeLock(); fullyScreenOff(); }
+
+    // Recovery mode — server tells us to change ping rate
+    if (msg.type === 'recovery_mode') {
+      recoveryMode = msg.active;
+      dbg('RECOVERY MODE: ' + (recoveryMode ? 'ACTIVE' : 'OFF'));
+      schedulePing(true);
+    }
+
+    // Token revoked — subscription cancelled
+    if (msg.type === 'token_revoked') {
+      dbg('TOKEN REVOKED — disconnecting');
+      if (ws) ws.close();
+      return;
+    }
 
     if (msg.type === 'webrtc_offer')  handleOffer(msg);
     if (msg.type === 'ice_candidate') handleIce(msg);
@@ -940,9 +958,16 @@ async function handleIce(msg) { if (peerConn && msg.candidate) await peerConn.ad
 // ════════════════════════════════════════════════
 // MISC
 // ════════════════════════════════════════════════
+let wakeLock = null;
 async function requestWakeLock() {
-  if ('wakeLock' in navigator) try { await navigator.wakeLock.request('screen'); } catch(e) {}
+  if ('wakeLock' in navigator) try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
 }
+// Re-acquire wake lock when page regains visibility (browsers release it on hide)
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && !phoneBatteryMode && !appSleeping) {
+    try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch(e) {}
+  }
+});
 let alertTimeout;
 function showAlert(msg) {
   const b = document.getElementById('alertBanner');

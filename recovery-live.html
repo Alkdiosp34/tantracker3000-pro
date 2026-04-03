@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TexTrack — Live Vehicle Recovery</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a0a; color:#e8e4de; font-family:'Segoe UI',system-ui,sans-serif; }
+#map { width:100%; height:100vh; }
+.overlay {
+  position:fixed; top:0; left:0; right:0; z-index:1000;
+  background:linear-gradient(180deg, rgba(204,51,51,0.95) 0%, rgba(204,51,51,0) 100%);
+  padding:16px 20px 40px;
+}
+.title { font-size:14px; font-weight:700; letter-spacing:2px; color:#fff; }
+.subtitle { font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px; }
+.info-bar {
+  position:fixed; bottom:0; left:0; right:0; z-index:1000;
+  background:rgba(10,10,10,0.95); border-top:2px solid #cc3333;
+  padding:16px 20px; display:flex; justify-content:space-between; align-items:center;
+}
+.stat { text-align:center; }
+.stat-label { font-size:10px; color:#666; letter-spacing:1px; }
+.stat-value { font-size:18px; font-weight:600; color:#fff; margin-top:2px; }
+.stat-value.speed { color:#cc3333; }
+.pulse-dot {
+  width:20px; height:20px; background:#cc3333; border-radius:50%;
+  border:3px solid #fff; box-shadow:0 0 20px #cc3333;
+  animation:pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow:0 0 10px #cc3333; }
+  50% { box-shadow:0 0 30px #cc3333, 0 0 60px rgba(204,51,51,0.3); }
+}
+.expired {
+  position:fixed; top:0; left:0; right:0; bottom:0; z-index:2000;
+  background:rgba(10,10,10,0.95); display:flex; align-items:center;
+  justify-content:center; flex-direction:column;
+}
+.expired-text { font-size:18px; color:#666; letter-spacing:2px; }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="overlay">
+  <div class="title">LIVE VEHICLE RECOVERY</div>
+  <div class="subtitle" id="statusText">Connecting...</div>
+</div>
+
+<div class="info-bar" id="infoBar" style="display:none;">
+  <div class="stat">
+    <div class="stat-label">SPEED</div>
+    <div class="stat-value speed" id="speed">--</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">ACCURACY</div>
+    <div class="stat-value" id="accuracy">--</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">LAST UPDATE</div>
+    <div class="stat-value" id="lastUpdate">--</div>
+  </div>
+</div>
+
+<div class="expired" id="expiredScreen" style="display:none;">
+  <div class="expired-text">RECOVERY SESSION EXPIRED</div>
+  <div style="color:#444;font-size:12px;margin-top:8px;">This tracking link is no longer active.</div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const shareCode = params.get('code');
+
+if (!shareCode) {
+  document.getElementById('statusText').textContent = 'Invalid link';
+}
+
+// Determine server URL from current page location
+const SERVER_URL = 'https://tantracker3000-pro1.onrender.com';
+
+const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([29.76, -95.36], 14);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+const carIcon = L.divIcon({
+  html: '<div class="pulse-dot"></div>',
+  iconSize: [20, 20], iconAnchor: [10, 10], className: ''
+});
+const carMarker = L.marker([29.76, -95.36], { icon: carIcon }).addTo(map);
+carMarker.setOpacity(0);
+
+const trail = L.polyline([], { color: '#cc3333', weight: 3, opacity: 0.6 }).addTo(map);
+
+let pollTimer = null;
+let firstFix = true;
+
+async function pollLocation() {
+  try {
+    const resp = await fetch(`${SERVER_URL}/recovery/live?code=${shareCode}`);
+    if (!resp.ok) {
+      if (resp.status === 404) {
+        document.getElementById('expiredScreen').style.display = 'flex';
+        clearInterval(pollTimer);
+        return;
+      }
+      return;
+    }
+    const data = await resp.json();
+    if (!data.active) {
+      document.getElementById('expiredScreen').style.display = 'flex';
+      clearInterval(pollTimer);
+      return;
+    }
+    if (data.location) {
+      const { lat, lon, mph, acc, ts } = data.location;
+      carMarker.setLatLng([lat, lon]);
+      carMarker.setOpacity(1);
+      trail.addLatLng([lat, lon]);
+
+      document.getElementById('infoBar').style.display = 'flex';
+      document.getElementById('speed').textContent = (mph || 0) + ' mph';
+      document.getElementById('accuracy').textContent = '±' + Math.round(acc || 0) + 'm';
+
+      const ago = Math.round((Date.now() - ts) / 1000);
+      document.getElementById('lastUpdate').textContent = ago < 5 ? 'NOW' : ago + 's ago';
+
+      document.getElementById('statusText').textContent =
+        (mph > 5 ? 'VEHICLE MOVING' : 'VEHICLE STATIONARY') + ' — tracking active';
+
+      if (firstFix) {
+        map.setView([lat, lon], 16);
+        firstFix = false;
+      } else {
+        map.panTo([lat, lon]);
+      }
+    } else {
+      document.getElementById('statusText').textContent = 'Waiting for vehicle signal...';
+    }
+  } catch(e) {
+    document.getElementById('statusText').textContent = 'Connection error — retrying...';
+  }
+}
+
+if (shareCode) {
+  pollLocation();
+  pollTimer = setInterval(pollLocation, 5000);
+}
+</script>
+</body>
+</html>
