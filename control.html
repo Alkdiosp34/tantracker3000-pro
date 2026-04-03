@@ -293,6 +293,57 @@ footer {
   </div>
 </div>
 
+<!-- VERIFY IDENTITY SCREEN (first use only) -->
+<div id="verifyScreen" style="position:fixed;inset:0;z-index:5002;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
+  <div class="logo" style="letter-spacing:3px;">TexTrack</div>
+  <div class="logo-sub">VERIFY YOUR IDENTITY</div>
+  <div style="width:100%;max-width:320px;text-align:center;">
+
+    <!-- EMAIL STEP -->
+    <div id="verifyEmailStep">
+      <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:16px;letter-spacing:1px;">
+        Enter the email address on your TexTrack account to set up your security PIN.
+      </div>
+      <input type="email" id="verifyEmailInput"
+        style="width:100%;background:#0a0a0a;border:1px solid var(--border);border-radius:4px;color:var(--bright);font-family:'Share Tech Mono',monospace;font-size:13px;padding:12px;text-align:center;letter-spacing:1px;margin-bottom:10px;"
+        placeholder="your@email.com"
+        onkeydown="if(event.key==='Enter')submitVerifyEmail()">
+      <button onclick="submitVerifyEmail()" style="width:100%;background:var(--green);color:#000;border:none;border-radius:4px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;letter-spacing:3px;padding:13px;cursor:pointer;" id="btnVerifyEmail">
+        SEND CODE →
+      </button>
+      <div id="verifyEmailErr" style="color:var(--red);font-size:11px;margin-top:8px;min-height:16px;letter-spacing:1px;"></div>
+    </div>
+
+    <!-- CODE STEP -->
+    <div id="verifyCodeStep" style="display:none;">
+      <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:6px;letter-spacing:1px;">
+        Enter the 6-digit code sent to
+      </div>
+      <div id="verifyCodeEmail" style="color:var(--bright);font-size:12px;margin-bottom:16px;"></div>
+      <input type="text" id="verifyCodeInput" maxlength="6" inputmode="numeric"
+        style="width:100%;background:#0a0a0a;border:1px solid var(--border);border-radius:4px;color:var(--amber);font-family:'Rajdhani',sans-serif;font-size:36px;font-weight:700;padding:12px;text-align:center;letter-spacing:12px;margin-bottom:10px;"
+        placeholder="······"
+        oninput="if(this.value.length===6)submitVerifyCode()"
+        onkeydown="if(event.key==='Enter')submitVerifyCode()">
+      <button onclick="submitVerifyCode()" style="width:100%;background:var(--green);color:#000;border:none;border-radius:4px;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:15px;letter-spacing:3px;padding:13px;cursor:pointer;" id="btnVerifyCode">
+        VERIFY →
+      </button>
+      <div id="verifyCodeErr" style="color:var(--red);font-size:11px;margin-top:8px;min-height:16px;letter-spacing:1px;"></div>
+      <button onclick="backToEmailStep()" style="background:none;border:none;color:var(--muted);font-size:10px;letter-spacing:1px;cursor:pointer;margin-top:10px;font-family:inherit;">
+        ← USE DIFFERENT EMAIL
+      </button>
+    </div>
+
+    <!-- LOCKED STATE -->
+    <div id="verifyLockedStep" style="display:none;text-align:center;">
+      <div style="font-size:32px;margin-bottom:12px;">🔒</div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:18px;color:var(--red);letter-spacing:3px;margin-bottom:8px;">TEMPORARILY LOCKED</div>
+      <div id="verifyLockMsg" style="font-size:11px;color:var(--muted);line-height:1.7;letter-spacing:1px;"></div>
+    </div>
+
+  </div>
+</div>
+
 <!-- SET PIN SCREEN (first use) -->
 <div id="setPinScreen" style="position:fixed;inset:0;z-index:5001;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
   <div class="logo" style="letter-spacing:3px;">TexTrack</div>
@@ -546,6 +597,26 @@ footer {
 // ════════════════════════════════════════════════
 const WS_URL = 'wss://tantracker3000-pro1.onrender.com';
 const CLIENT_TOKEN = new URLSearchParams(window.location.search).get('token') || 'tt3k-6b013c92cface5653bcd4485'; // reads from URL ?token=
+// ── SESSION CONFIG ───────────────────────────────────────────
+const SESSION_DAYS = 60; // sliding window
+const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
+const SESSION_KEY = () => 'tt3k_session_' + CLIENT_TOKEN;
+
+function getSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY()) || 'null'); } catch(e) { return null; }
+}
+function saveSession() {
+  localStorage.setItem(SESSION_KEY(), JSON.stringify({ ts: Date.now() }));
+}
+function sessionValid() {
+  const s = getSession();
+  return s && (Date.now() - s.ts) < SESSION_MS;
+}
+function touchSession() {
+  // Slide the window on every visit
+  if (sessionValid()) saveSession();
+}
+
 // ── PIN CONFIG ───────────────────────────────────────────────
 // PIN is stored server-side, verified on login
 // First use: prompted to set PIN
@@ -593,7 +664,7 @@ async function spcheck() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to set PIN');
     // PIN set — store session in localStorage
-    localStorage.setItem('tt3k_pin_session_' + CLIENT_TOKEN, Date.now());
+    saveSession();
     document.getElementById('setPinScreen').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'none';
     initApp();
@@ -660,8 +731,9 @@ function lupdate() {
 }
 async function lcheck() {
   // Check session cache first (5 min grace)
-  const session = localStorage.getItem('tt3k_pin_session_' + CLIENT_TOKEN);
-  if (session && Date.now() - parseInt(session) < 5 * 60 * 1000) {
+  // Already handled by startup() — this is just a fallback
+  if (sessionValid()) {
+    touchSession();
     document.getElementById('loginScreen').style.display = 'none';
     initApp(); return;
   }
@@ -674,7 +746,7 @@ async function lcheck() {
     });
     const data = await res.json();
     if (data.success) {
-      localStorage.setItem('tt3k_pin_session_' + CLIENT_TOKEN, Date.now());
+      saveSession();
       document.getElementById('loginScreen').style.display = 'none';
       initApp();
     } else if (data.error === 'no_pin') {
@@ -1454,20 +1526,138 @@ function dismissInstall() {
   if (b) b.remove();
 }
 
-// ── PIN RESET FROM EMAIL LINK ────────────────────────────────
-(async function checkReset() {
+// ── VERIFY IDENTITY (first-time setup) ───────────────────────
+let _verifyEmail = '';
+
+async function submitVerifyEmail() {
+  const email = document.getElementById('verifyEmailInput').value.trim();
+  const err = document.getElementById('verifyEmailErr');
+  if (!email || !email.includes('@')) { err.textContent = 'Enter a valid email address.'; return; }
+  const btn = document.getElementById('btnVerifyEmail');
+  btn.disabled = true; btn.textContent = 'SENDING...'; err.textContent = '';
+  try {
+    const res = await fetch(SERVER_URL + '/pin/setup/request', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: CLIENT_TOKEN, email })
+    });
+    const data = await res.json();
+    if (res.status === 429) {
+      showVerifyLocked(data.wait_minutes); return;
+    }
+    if (!res.ok) {
+      if (data.error === 'email_mismatch') {
+        err.textContent = data.attempts_remaining > 0
+          ? `Email not recognized. ${data.attempts_remaining} attempt${data.attempts_remaining === 1 ? '' : 's'} remaining.`
+          : 'Too many attempts.';
+      } else {
+        err.textContent = data.error || 'Failed to send code.';
+      }
+      btn.disabled = false; btn.textContent = 'SEND CODE →';
+      return;
+    }
+    _verifyEmail = email;
+    document.getElementById('verifyCodeEmail').textContent = email;
+    document.getElementById('verifyEmailStep').style.display = 'none';
+    document.getElementById('verifyCodeStep').style.display = 'block';
+    document.getElementById('verifyCodeInput').focus();
+  } catch(e) {
+    err.textContent = 'Connection error — try again.';
+    btn.disabled = false; btn.textContent = 'SEND CODE →';
+  }
+}
+
+async function submitVerifyCode() {
+  const code = document.getElementById('verifyCodeInput').value.trim();
+  const err = document.getElementById('verifyCodeErr');
+  if (code.length !== 6) { err.textContent = 'Enter the full 6-digit code.'; return; }
+  const btn = document.getElementById('btnVerifyCode');
+  btn.disabled = true; btn.textContent = 'VERIFYING...'; err.textContent = '';
+  try {
+    const res = await fetch(SERVER_URL + '/pin/setup/verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: CLIENT_TOKEN, code })
+    });
+    const data = await res.json();
+    if (res.status === 429) { showVerifyLocked(data.wait_minutes); return; }
+    if (!res.ok) {
+      err.textContent = data.error === 'wrong_code'
+        ? `Incorrect code. ${data.attempts_remaining} attempt${data.attempts_remaining === 1 ? '' : 's'} remaining.`
+        : (data.error || 'Verification failed.');
+      btn.disabled = false; btn.textContent = 'VERIFY →';
+      document.getElementById('verifyCodeInput').value = '';
+      return;
+    }
+    // Verified — show set PIN screen
+    document.getElementById('verifyScreen').style.display = 'none';
+    document.getElementById('setPinScreen').style.display = 'flex';
+    document.getElementById('setPinLabel').textContent = 'CHOOSE A 5-DIGIT PIN';
+  } catch(e) {
+    err.textContent = 'Connection error — try again.';
+    btn.disabled = false; btn.textContent = 'VERIFY →';
+  }
+}
+
+function backToEmailStep() {
+  document.getElementById('verifyCodeStep').style.display = 'none';
+  document.getElementById('verifyEmailStep').style.display = 'block';
+  document.getElementById('verifyCodeInput').value = '';
+  document.getElementById('btnVerifyEmail').disabled = false;
+  document.getElementById('btnVerifyEmail').textContent = 'SEND CODE →';
+}
+
+function showVerifyLocked(minutes) {
+  document.getElementById('verifyEmailStep').style.display = 'none';
+  document.getElementById('verifyCodeStep').style.display = 'none';
+  document.getElementById('verifyLockedStep').style.display = 'block';
+  document.getElementById('verifyLockMsg').textContent =
+    'Too many failed attempts. Please wait ' + minutes + ' minute' + (minutes === 1 ? '' : 's') + ' before trying again.';
+}
+
+// ── STARTUP: CHECK PIN STATE ─────────────────────────────────
+(async function startup() {
   const params = new URLSearchParams(window.location.search);
   const resetCode = params.get('reset');
-  if (!resetCode) return;
 
-  // Show set PIN screen with reset flow
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('setPinScreen').style.display = 'flex';
-  document.getElementById('setPinLabel').textContent = 'SET YOUR NEW PIN';
+  // CASE 1: PIN reset from email link
+  if (resetCode) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('setPinScreen').style.display = 'flex';
+    document.getElementById('setPinLabel').textContent = 'SET YOUR NEW PIN';
+    window._resetCode = resetCode;
+    return;
+  }
 
-  // Override spcheck to use reset validation
-  window._resetCode = resetCode;
-  console.log('[pin] Reset flow active');
+  // CASE 2: Valid 60-day sliding session — go straight in
+  if (sessionValid()) {
+    touchSession(); // slide the window
+    document.getElementById('loginScreen').style.display = 'none';
+    initApp();
+    return;
+  }
+
+  // CASE 3: Check PIN status from server
+  try {
+    const r = await fetch(SERVER_URL + '/pin/exists?token=' + CLIENT_TOKEN);
+    const d = await r.json();
+
+    if (d.locked) {
+      // Show locked state on login screen
+      document.getElementById('loginError').textContent = 'LOCKED — WAIT ' + d.wait_minutes + ' MIN';
+      return;
+    }
+
+    if (!d.exists) {
+      // No PIN set — show identity verification first
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('verifyScreen').style.display = 'flex';
+      return;
+    }
+  } catch(e) {
+    console.log('[pin] Could not check PIN status:', e.message);
+  }
+
+  // CASE 4: PIN exists, no session — show normal PIN login
+  // loginScreen is already visible by default
 })();
 
 // Override spcheck if in reset mode
@@ -1489,7 +1679,7 @@ window.spcheck_override = async function() {
     });
     const data = await res.json();
     if (data.success) {
-      localStorage.setItem('tt3k_pin_session_' + CLIENT_TOKEN, Date.now());
+      saveSession();
       document.getElementById('setPinScreen').style.display = 'none';
       window._resetCode = null;
       window.history.replaceState({}, '', window.location.pathname + '?token=' + CLIENT_TOKEN);

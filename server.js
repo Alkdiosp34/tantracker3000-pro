@@ -120,8 +120,20 @@ async function initDB() {
           reset_code TEXT,
           reset_expires INTEGER,
           completed_min_period INTEGER DEFAULT 0,
+          setup_attempts INTEGER DEFAULT 0,
+          setup_locked_until INTEGER DEFAULT 0,
           created_at INTEGER DEFAULT (strftime('%s','now')),
           updated_at INTEGER DEFAULT (strftime('%s','now'))
+        )`, args: []
+      },
+      {
+        sql: `CREATE TABLE IF NOT EXISTS verify_codes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          token TEXT NOT NULL,
+          code TEXT NOT NULL,
+          expires_at INTEGER NOT NULL,
+          used INTEGER DEFAULT 0,
+          created_at INTEGER DEFAULT (strftime('%s','now'))
         )`, args: []
       },
       {
@@ -1070,6 +1082,138 @@ const httpServer = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── SETUP: VERIFY EMAIL (first-time PIN setup) ────────────
+  if (url.pathname === '/pin/setup/request' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        const { token, email } = data;
+        if (!token || !email) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Missing fields' })); return; }
+        if (!db) { res.writeHead(503, cors); res.end(JSON.stringify({ error: 'DB unavailable' })); return; }
+
+        // Check lockout
+        const pinRow = await db.execute({ sql: 'SELECT * FROM pins WHERE token = ?', args: [token] });
+        if (pinRow.rows[0]?.setup_locked_until && Date.now() < pinRow.rows[0].setup_locked_until) {
+          const wait = Math.ceil((pinRow.rows[0].setup_locked_until - Date.now()) / 60000);
+          res.writeHead(429, cors); res.end(JSON.stringify({ error: 'locked', wait_minutes: wait })); return;
+        }
+
+        // Check vehicle exists and email matches
+        const v = await db.execute({ sql: 'SELECT * FROM vehicles WHERE token = ?', args: [token] });
+        const vehicle = v.rows[0];
+        if (!vehicle) { res.writeHead(404, cors); res.end(JSON.stringify({ error: 'Invalid token' })); return; }
+
+        // Check email matches (case-insensitive)
+        if (!vehicle.owner_email || vehicle.owner_email.toLowerCase() !== email.toLowerCase().trim()) {
+          // Increment attempt counter
+          const attempts = (pinRow.rows[0]?.setup_attempts || 0) + 1;
+          const lockedUntil = attempts >= 4 ? Date.now() + (15 * 60 * 1000) : 0;
+          await db.execute({
+            sql: 'INSERT INTO pins (token, pin_hash, setup_attempts, setup_locked_until) VALUES (?,?,?,?) ON CONFLICT(token) DO UPDATE SET setup_attempts=excluded.setup_attempts, setup_locked_until=excluded.setup_locked_until',
+            args: [token, '', attempts, lockedUntil]
+          });
+          const remaining = 4 - attempts;
+          if (lockedUntil) {
+            res.writeHead(429, cors); res.end(JSON.stringify({ error: 'locked', wait_minutes: 15 })); return;
+          }
+          res.writeHead(403, cors); res.end(JSON.stringify({ error: 'email_mismatch', attempts_remaining: remaining })); return;
+        }
+
+        // Email matches — reset attempt counter, send 6-digit code
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const expiresAt = Date.now() + (15 * 60 * 1000);
+        await db.execute({
+          sql: 'INSERT INTO verify_codes (token, code, expires_at) VALUES (?,?,?)',
+          args: [token, code, expiresAt]
+        });
+        // Reset attempt counter
+        await db.execute({
+          sql: 'INSERT INTO pins (token, pin_hash, setup_attempts, setup_locked_until) VALUES (?,?,0,0) ON CONFLICT(token) DO UPDATE SET setup_attempts=0, setup_locked_until=0',
+          args: [token, '']
+        });
+
+        const vehicleLabel = [vehicle.year, vehicle.make, vehicle.model].filter(Boolean).join(' ') || 'your vehicle';
+        await sendEmail({
+          to: email,
+          subject: 'TexTrack verification code — ' + vehicleLabel,
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:440px;margin:0 auto;background:#0a0a0a;color:#ccc;padding:32px;border-radius:8px;">
+              <div style="font-size:24px;font-weight:700;color:#e09020;letter-spacing:4px;margin-bottom:24px;">TexTrack</div>
+              <h2 style="color:#fff;font-size:18px;margin-bottom:12px;">Your verification code</h2>
+              <p style="color:#aaa;line-height:1.7;margin-bottom:20px;">
+                Use this code to verify your identity and set up your PIN for <strong style="color:#fff;">${vehicleLabel}</strong>.
+              </p>
+              <div style="background:#111;border:1px solid #333;border-radius:8px;padding:24px;text-align:center;margin-bottom:20px;">
+                <div style="font-family:monospace;font-size:40px;font-weight:900;letter-spacing:12px;color:#e09020;">${code}</div>
+                <div style="font-size:11px;color:#555;margin-top:8px;letter-spacing:1px;">EXPIRES IN 15 MINUTES</div>
+              </div>
+              <p style="font-size:11px;color:#555;text-align:center;">If you didn't request this, ignore this email. Your tracker is still secure.</p>
+            </div>`
+        });
+
+        console.log('[setup] Verification code sent to:', email, 'for token:', token.slice(0,12) + '...');
+        res.writeHead(200, cors); res.end(JSON.stringify({ success: true, message: 'Verification code sent' }));
+      } catch(e) { res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message })); }
+    });
+    return;
+  }
+
+  // ── SETUP: VERIFY CODE ─────────────────────────────────────
+  if (url.pathname === '/pin/setup/verify' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        const { token, code } = data;
+        if (!token || !code) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Missing fields' })); return; }
+        if (!db) { res.writeHead(503, cors); res.end(JSON.stringify({ error: 'DB unavailable' })); return; }
+
+        // Check lockout
+        const pinRow = await db.execute({ sql: 'SELECT * FROM pins WHERE token = ?', args: [token] });
+        if (pinRow.rows[0]?.setup_locked_until && Date.now() < pinRow.rows[0].setup_locked_until) {
+          const wait = Math.ceil((pinRow.rows[0].setup_locked_until - Date.now()) / 60000);
+          res.writeHead(429, cors); res.end(JSON.stringify({ error: 'locked', wait_minutes: wait })); return;
+        }
+
+        // Find most recent valid code for this token
+        const cr = await db.execute({
+          sql: 'SELECT * FROM verify_codes WHERE token = ? AND used = 0 AND expires_at > ? ORDER BY created_at DESC LIMIT 1',
+          args: [token, Date.now()]
+        });
+        const verifyRow = cr.rows[0];
+        if (!verifyRow) { res.writeHead(410, cors); res.end(JSON.stringify({ error: 'Code expired or not found' })); return; }
+
+        if (verifyRow.code !== code.trim()) {
+          // Wrong code — increment lockout counter
+          const attempts = (pinRow.rows[0]?.setup_attempts || 0) + 1;
+          const lockedUntil = attempts >= 4 ? Date.now() + (15 * 60 * 1000) : 0;
+          await db.execute({
+            sql: 'INSERT INTO pins (token, pin_hash, setup_attempts, setup_locked_until) VALUES (?,?,?,?) ON CONFLICT(token) DO UPDATE SET setup_attempts=excluded.setup_attempts, setup_locked_until=excluded.setup_locked_until',
+            args: [token, pinRow.rows[0]?.pin_hash || '', attempts, lockedUntil]
+          });
+          if (lockedUntil) {
+            res.writeHead(429, cors); res.end(JSON.stringify({ error: 'locked', wait_minutes: 15 })); return;
+          }
+          res.writeHead(403, cors); res.end(JSON.stringify({ error: 'wrong_code', attempts_remaining: 4 - attempts })); return;
+        }
+
+        // Code correct — mark used, reset attempts
+        await db.execute({ sql: 'UPDATE verify_codes SET used = 1 WHERE id = ?', args: [verifyRow.id] });
+        await db.execute({
+          sql: 'INSERT INTO pins (token, pin_hash, setup_attempts, setup_locked_until) VALUES (?,?,0,0) ON CONFLICT(token) DO UPDATE SET setup_attempts=0, setup_locked_until=0',
+          args: [token, pinRow.rows[0]?.pin_hash || '']
+        });
+
+        console.log('[setup] Email verified for token:', token.slice(0,12) + '...');
+        res.writeHead(200, cors); res.end(JSON.stringify({ success: true, verified: true }));
+      } catch(e) { res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message })); }
+    });
+    return;
+  }
+
   // ── PIN: SET OR CHANGE ────────────────────────────────────
   if (url.pathname === '/pin/set' && req.method === 'POST') {
     let body = '';
@@ -1139,8 +1283,12 @@ const httpServer = http.createServer(async (req, res) => {
     if (!token) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Missing token' })); return; }
     try {
       if (!db) { res.writeHead(503, cors); res.end(JSON.stringify({ error: 'DB unavailable' })); return; }
-      const r = await db.execute({ sql: 'SELECT id FROM pins WHERE token = ?', args: [token] });
-      res.writeHead(200, cors); res.end(JSON.stringify({ exists: r.rows.length > 0 }));
+      const r = await db.execute({ sql: 'SELECT * FROM pins WHERE token = ?', args: [token] });
+      const row = r.rows[0];
+      const pinSet = row && row.pin_hash && row.pin_hash.length > 0;
+      const locked = row?.setup_locked_until && Date.now() < row.setup_locked_until;
+      const waitMinutes = locked ? Math.ceil((row.setup_locked_until - Date.now()) / 60000) : 0;
+      res.writeHead(200, cors); res.end(JSON.stringify({ exists: pinSet, locked: !!locked, wait_minutes: waitMinutes }));
     } catch(e) { res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message })); }
     return;
   }
