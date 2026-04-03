@@ -413,20 +413,11 @@ const httpServer = http.createServer(async (req, res) => {
             { price: process.env.STRIPE_INSTALL_PRICE_ID, quantity: 1 },
             { price: process.env.STRIPE_SINGLE_PRICE_ID, quantity: 1 }
           ],
-          custom_fields: [
-            { key: 'vin', label: { type: 'custom', custom: 'Vehicle VIN' }, type: 'text', optional: false },
-            { key: 'make', label: { type: 'custom', custom: 'Make (e.g. Ford)' }, type: 'text', optional: false },
-            { key: 'model', label: { type: 'custom', custom: 'Model (e.g. F-150)' }, type: 'text', optional: false },
-            { key: 'year', label: { type: 'custom', custom: 'Year (e.g. 2021)' }, type: 'text', optional: false },
-            { key: 'color', label: { type: 'custom', custom: 'Vehicle Color' }, type: 'text', optional: false },
-            { key: 'plate', label: { type: 'custom', custom: 'License Plate + State' }, type: 'text', optional: false }
+         custom_fields: [
+            { key: 'vin', label: { type: 'custom', custom: 'Vehicle VIN (17 characters)' }, type: 'text', optional: false },
+            { key: 'year_make_model', label: { type: 'custom', custom: 'Year, Make, Model (e.g. 2021 Ford F-150)' }, type: 'text', optional: false },
+            { key: 'color_plate', label: { type: 'custom', custom: 'Color + License Plate (e.g. White ABC-1234 TX)' }, type: 'text', optional: false }
           ],
-          phone_number_collection: { enabled: true },
-          // IMPORTANT: metadata uses installer_stripe_id so webhook can look up correct Stripe account
-          metadata: {
-            installer_stripe_id: data.installer_stripe_id,
-            installer_name: data.installer_name
-          },
           after_completion: {
             type: 'redirect',
             redirect: { url: process.env.WELCOME_URL || 'https://alkdiosp34.github.io/tantracker3000-pro/welcome.html' }
