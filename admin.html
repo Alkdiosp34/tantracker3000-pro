@@ -319,7 +319,10 @@ function renderInstallers(installers) {
       </td>
       <td><span class="badge badge-${i.status}">${i.status?.toUpperCase()}</span></td>
       <td>
-        <button class="btn-sm" onclick="generatePaymentLink('${i.stripe_account_id}','${i.name}')">GET QR LINK</button>
+        ${i.stripe_payment_link 
+          ? `<button class="btn-sm" onclick="showQrLink('${i.stripe_payment_link}','${i.name}')">GET QR LINK</button>`
+          : `<button class="btn-sm" onclick="generatePaymentLink('${i.stripe_account_id}','${i.name}')">GEN QR LINK</button>`
+        }
       </td>
     </tr>
   `}).join('');
@@ -390,6 +393,19 @@ async function addInstaller() {
     document.getElementById('installerError').textContent = e.message || 'Failed to create installer';
     document.getElementById('installerError').style.display = 'block';
   }
+}
+
+function showQrLink(url, installerName) {
+  const signupUrl = url;
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html><body style="font-family:monospace;background:#0a0a0a;color:#e09020;padding:32px;">
+      <h2>Customer Signup Link for ${installerName}</h2>
+      <p style="word-break:break-all;margin:16px 0;color:#00cc66;">${signupUrl}</p>
+      <p style="color:#888;">Convert to QR code at qr-code-generator.com — give to installer to show customers.</p>
+      <a href="${signupUrl}" style="color:#00cc66;">Test the signup flow →</a>
+    </body></html>
+  `);
 }
 
 async function generatePaymentLink(stripeAccountId, installerName) {
