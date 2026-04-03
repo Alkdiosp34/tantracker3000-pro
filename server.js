@@ -324,7 +324,7 @@ const httpServer = http.createServer(async (req, res) => {
               args: [sub.id]
             });
             console.log('[stripe] Subscription cancelled for', sub.id);
-          // ETF auto-invoice for early cancellation
+
             const r = await db.execute({
               sql: 'SELECT * FROM vehicles WHERE stripe_subscription_id = ?',
               args: [sub.id]
@@ -340,7 +340,7 @@ const httpServer = http.createServer(async (req, res) => {
                     customer: vehicle.stripe_customer_id,
                     amount: etfAmount,
                     currency: 'usd',
-                    description: `Early termination fee — ${remainingMonths} remaining month(s) (VIN: ${vehicle.vin})`
+                    description: `Early termination fee - ${remainingMonths} remaining month(s) (VIN: ${vehicle.vin})`
                   });
                   const inv = await stripe.invoices.create({
                     customer: vehicle.stripe_customer_id,
@@ -349,15 +349,13 @@ const httpServer = http.createServer(async (req, res) => {
                   });
                   await stripe.invoices.finalizeInvoice(inv.id);
                   await stripe.invoices.sendInvoice(inv.id);
-                  console.log(`[stripe] ETF invoice sent: $${etfAmount/100} for ${remainingMonths} months`);
+                  console.log('[stripe] ETF invoice sent: $' + (etfAmount/100) + ' for ' + remainingMonths + ' months');
                 } catch(e) { console.error('[stripe] ETF invoice error:', e.message); }
               }
             }
-
-      res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('ok');
-    });
-    return;
-  }
+          } catch(e) { console.error('[stripe] Cancellation handler error:', e.message); }
+        }
+      }
 
   // ── HISTORY API ─────────────────────────────────────────────
   if (url.pathname === '/history' && req.method === 'GET') {
