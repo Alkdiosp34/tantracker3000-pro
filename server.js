@@ -427,8 +427,8 @@ const httpServer = http.createServer(async (req, res) => {
         // FIX: Save the payment link URL back to the installer record in DB
         if (db && data.installer_stripe_id) {
           await db.execute({
-            sql: 'UPDATE installers SET stripe_payment_link = ? WHERE stripe_account_id = ?',
-            args: [link.url, data.installer_stripe_id]
+            sql: 'INSERT INTO installers (name, email, stripe_account_id, stripe_payment_link, status) VALUES (?, ?, ?, ?, ?) ON CONFLICT(stripe_account_id) DO UPDATE SET stripe_payment_link = excluded.stripe_payment_link',
+            args: [data.installer_name || 'Installer', data.installer_name + '@installer.com', data.installer_stripe_id, link.url, 'active']
           });
           console.log(`[admin] Payment link saved for installer ${data.installer_stripe_id}`);
         }
