@@ -18,8 +18,8 @@
 
 :root {
   --red: #ff2233; --blue: #1144ff; --amber: #ffaa00;
-  --green: #00ff88; --dim: #080d08; --panel: #0d1a0d;
-  --border: #1a3a1a; --text: #88cc88; --bright: #ccffcc; --muted: #4a7a4a;
+  --green: #00ff88; --dim: #07100a; --panel: #0f1f12;
+  --border: #1e4a24; --text: #a8e0b0; --bright: #e8ffe8; --muted: #5a8a64;
   --route: #00aaff; --you: #ffaa00; --car: #00ff88;
 }
 
@@ -104,8 +104,8 @@ header {
   border-bottom:1px solid var(--border); flex-shrink:0;
 }
 .tab {
-  padding:9px; text-align:center; font-size:10px; letter-spacing:1px;
-  color:var(--muted); cursor:pointer; border-bottom:2px solid transparent;
+  padding:9px; text-align:center; font-size:11px; letter-spacing:2px;
+  color:var(--text); cursor:pointer; border-bottom:2px solid transparent; font-weight:600;
   transition:all 0.15s;
 }
 .tab.active { color:var(--green); border-bottom-color:var(--green); }
@@ -115,7 +115,7 @@ header {
 .tab-panel.active { display:flex; }
 
 .section-label {
-  font-size:9px; letter-spacing:2px; color:var(--muted);
+  font-size:10px; letter-spacing:2px; color:var(--text); font-weight:600;
   text-transform:uppercase; margin-bottom:2px;
 }
 
@@ -123,7 +123,7 @@ header {
 .telem-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
 .telem-cell { background:#060d06; border:1px solid var(--border); border-radius:3px; padding:8px; }
 .telem-label { font-size:9px; color:var(--muted); margin-bottom:2px; }
-.telem-val { font-size:13px; color:var(--amber); }
+.telem-val { font-size:14px; color:var(--amber); font-weight:700; }
 
 /* DIRECTIONS PANEL */
 .directions-header {
@@ -162,7 +162,7 @@ header {
   border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
   font-size:14px; flex-shrink:0;
 }
-.turn-text { font-size:11px; color:var(--text); line-height:1.4; flex:1; }
+.turn-text { font-size:12px; color:var(--bright); line-height:1.5; flex:1; font-weight:500; }
 .turn-dist { font-size:10px; color:var(--muted); margin-top:2px; }
 
 /* BUTTONS */
@@ -171,7 +171,7 @@ header {
   width:100%; padding:12px; background:#060d06; border:1px solid var(--border);
   border-radius:4px; color:var(--text); font-family:'Share Tech Mono',monospace;
   font-size:12px; cursor:pointer; display:flex; align-items:center; gap:10px;
-  letter-spacing:1px; transition:all 0.15s; text-align:left;
+  letter-spacing:1px; transition:all 0.15s; text-align:left; color:var(--bright);
 }
 .cmd-btn:hover { background:#0d1f0d; border-color:var(--green); }
 .cmd-btn:active { transform:scale(0.98); }
@@ -338,6 +338,7 @@ footer {
       <div class="tab active" id="tabDir" onclick="switchTab('dir')">DIRECTIONS</div>
       <div class="tab" id="tabCtrl" onclick="switchTab('ctrl')">CONTROLS</div>
       <div class="tab" id="tabHist" onclick="switchTab('hist')">HISTORY</div>
+      <div class="tab" id="tabXfer" onclick="switchTab('xfer')" style="color:#ff8800;">TRANSFER</div>
     </div>
 
     <!-- DIRECTIONS TAB -->
@@ -424,22 +425,33 @@ footer {
     </div>
 
     <!-- TRANSFER SECTION -->
-    <div style="padding:14px;border-top:1px solid var(--border);margin-top:auto;flex-shrink:0;">
-      <div class="section-label" style="margin-bottom:8px;">▸ Sell / Transfer Vehicle</div>
-      <div style="font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:10px;">
-        Selling this vehicle? Generate a transfer link for the new owner. Your subscription ends when they complete payment.
+    
+
+    <!-- TRANSFER TAB -->
+    <div class="tab-panel" id="panelXfer">
+      <div>
+        <div class="section-label">▸ Sell / Transfer</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:12px;">
+          Selling this vehicle? Generate a secure transfer link for the new owner.
+          Your subscription ends automatically when they complete payment.
+        </div>
+        <button onclick="initiateTransfer()" class="cmd-btn" id="btnTransfer" style="border-color:#ff8800;color:#ff8800;width:100%;justify-content:center;">
+          <span class="btn-icon">🔁</span> GENERATE TRANSFER LINK
+        </button>
       </div>
-      <button class="cmd-btn" id="btnTransfer" onclick="initiateTransfer()" style="border-color:#ff8800;color:#ff8800;width:100%;justify-content:center;">
-        <span class="btn-icon">🔁</span> GENERATE TRANSFER LINK
-      </button>
-      <div id="transferResult" style="display:none;margin-top:12px;">
-        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;">TRANSFER LINK (48hr expiry):</div>
-        <div id="transferUrl" style="font-size:10px;color:#ff8800;word-break:break-all;background:#0a0500;border:1px solid #331a00;border-radius:4px;padding:8px;margin-bottom:8px;"></div>
-        <div id="transferQr" style="text-align:center;margin-bottom:8px;"></div>
-        <button onclick="copyTransferLink()" class="cmd-btn" style="width:100%;justify-content:center;font-size:10px;">📋 COPY LINK</button>
-        <div style="font-size:9px;color:var(--muted);margin-top:6px;text-align:center;">New owner scans QR or opens link to complete transfer</div>
+      <div id="transferResult" style="display:none;">
+        <div class="section-label">▸ Transfer Link</div>
+        <div style="font-size:9px;color:#ff8800;letter-spacing:1px;margin-bottom:6px;">VALID FOR 48 HOURS</div>
+        <div id="transferUrl" style="font-size:10px;color:#ff8800;word-break:break-all;background:#0a0500;border:1px solid #331a00;border-radius:4px;padding:10px;margin-bottom:10px;"></div>
+        <div id="transferQr" style="text-align:center;margin-bottom:10px;"></div>
+        <button onclick="copyTransferLink()" class="cmd-btn" style="width:100%;justify-content:center;">
+          <span class="btn-icon">📋</span> COPY LINK
+        </button>
+        <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center;line-height:1.6;">
+          New owner scans QR or opens link · No installer visit needed
+        </div>
       </div>
-      <div id="transferErr" style="color:#ff3333;font-size:10px;margin-top:6px;"></div>
+      <div id="transferErr" style="color:#ff3333;font-size:11px;margin-top:6px;"></div>
     </div>
 
     <!-- HISTORY TAB -->
@@ -696,7 +708,7 @@ async function lcheck() {
 function switchTab(t) {
   document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
-  const map = { dir: 'Dir', ctrl: 'Ctrl', hist: 'Hist' };
+  const map = { dir: 'Dir', ctrl: 'Ctrl', hist: 'Hist', xfer: 'Xfer' };
   document.getElementById('tab' + map[t]).classList.add('active');
   document.getElementById('panel' + map[t]).classList.add('active');
 }
