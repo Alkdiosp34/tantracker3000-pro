@@ -1638,15 +1638,23 @@ function showVerifyLocked(minutes) {
     const d = await r.json();
 
     if (d.locked) {
-      // Show locked state on login screen
       document.getElementById('loginError').textContent = 'LOCKED — WAIT ' + d.wait_minutes + ' MIN';
       return;
     }
 
     if (!d.exists) {
-      // No PIN set — show identity verification first
+      // No PIN set at all — check if they have a verified code waiting
+      // Show verify screen so they can complete setup
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('verifyScreen').style.display = 'flex';
+      return;
+    }
+
+    if (d.pin_empty) {
+      // Verified but PIN not set yet — skip verify, go straight to set PIN
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('setPinScreen').style.display = 'flex';
+      document.getElementById('setPinLabel').textContent = 'CHOOSE A 5-DIGIT PIN';
       return;
     }
   } catch(e) {

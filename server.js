@@ -1286,9 +1286,10 @@ const httpServer = http.createServer(async (req, res) => {
       const r = await db.execute({ sql: 'SELECT * FROM pins WHERE token = ?', args: [token] });
       const row = r.rows[0];
       const pinSet = row && row.pin_hash && row.pin_hash.length > 0;
+      const pinEmpty = row && (!row.pin_hash || row.pin_hash.length === 0); // row exists but no PIN set
       const locked = row?.setup_locked_until && Date.now() < row.setup_locked_until;
       const waitMinutes = locked ? Math.ceil((row.setup_locked_until - Date.now()) / 60000) : 0;
-      res.writeHead(200, cors); res.end(JSON.stringify({ exists: pinSet, locked: !!locked, wait_minutes: waitMinutes }));
+      res.writeHead(200, cors); res.end(JSON.stringify({ exists: pinSet, pin_empty: !!pinEmpty, locked: !!locked, wait_minutes: waitMinutes }));
     } catch(e) { res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message })); }
     return;
   }
