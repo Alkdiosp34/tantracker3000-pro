@@ -133,6 +133,24 @@ async function initDB() {
         )`, args: []
       },
       {
+        sql: `CREATE TABLE IF NOT EXISTS pins (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          token TEXT UNIQUE NOT NULL,
+          pin_hash TEXT,
+          owner_email TEXT,
+          verified INTEGER DEFAULT 0,
+          verify_code TEXT,
+          verify_code_expires INTEGER,
+          verify_attempts INTEGER DEFAULT 0,
+          verify_locked_until INTEGER DEFAULT 0,
+          pin_attempts INTEGER DEFAULT 0,
+          pin_locked_until INTEGER DEFAULT 0,
+          reset_code TEXT,
+          reset_code_expires INTEGER,
+          created_at INTEGER DEFAULT (strftime('%s','now'))
+        )`, args: []
+      },
+      {
         sql: `CREATE TABLE IF NOT EXISTS recovery_sessions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           token TEXT NOT NULL,
@@ -354,6 +372,40 @@ async function sendEmail(to, subject, html) {
     });
     return res.ok;
   } catch(e) { console.error('[email] Send error:', e.message); return false; }
+}
+
+
+// ── PIN HELPERS ───────────────────────────────────────────────
+function hashPin(pin) {
+  return crypto.createHash('sha256').update(pin + '_textrack_salt').digest('hex');
+}
+
+function generateCode() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+async function getPinRecord(token) {
+  if (!db) return null;
+  try {
+    const r = await db.execute({ sql: 'SELECT * FROM pins WHERE token = ?', args: [token] });
+    return r.rows[0] || null;
+  } catch(e) { return null; }
+}
+
+async function ensurePinRecord(token) {
+  if (!db) return null;
+  let rec = await getPinRecord(token);
+  if (!rec) {
+    // Look up owner email from vehicles table
+    const v = await getVehicleByToken(token);
+    const email = v?.owner_email || null;
+    await db.execute({
+      sql: 'INSERT OR IGNORE INTO pins (token, owner_email) VALUES (?,?)',
+      args: [token, email]
+    });
+    rec = await getPinRecord(token);
+  }
+  return rec;
 }
 
 // ── HTTP SERVER ───────────────────────────────────────────────
@@ -707,6 +759,321 @@ const httpServer = http.createServer(async (req, res) => {
     } catch(e) {
       res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
     }
+    return;
+  }
+
+
+  // ── PIN: CHECK IF EXISTS ────────────────────────────────────
+  if (url.pathname === '/pin/exists' && req.method === 'GET') {
+    const token = url.searchParams.get('token');
+    if (!token) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token required' })); return; }
+    const rec = await getPinRecord(token);
+    if (!rec) {
+      res.writeHead(200, cors);
+      res.end(JSON.stringify({ exists: false }));
+      return;
+    }
+    // Check if locked
+    if (rec.pin_locked_until && Date.now() < rec.pin_locked_until) {
+      const wait = Math.ceil((rec.pin_locked_until - Date.now()) / 60000);
+      res.writeHead(200, cors);
+      res.end(JSON.stringify({ exists: true, locked: true, wait_minutes: wait }));
+      return;
+    }
+    res.writeHead(200, cors);
+    res.end(JSON.stringify({
+      exists: true,
+      pin_empty: !rec.pin_hash,
+      verified: !!rec.verified,
+      locked: false
+    }));
+    return;
+  }
+
+  // ── PIN: SETUP REQUEST (send verification code to owner email) ─
+  if (url.pathname === '/pin/setup/request' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.token || !data.email) {
+          res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token and email required' })); return;
+        }
+        const rec = await ensurePinRecord(data.token);
+        if (!rec) { res.writeHead(500, cors); res.end(JSON.stringify({ error: 'DB error' })); return; }
+
+        // Check rate limit
+        if (rec.verify_locked_until && Date.now() < rec.verify_locked_until) {
+          const wait = Math.ceil((rec.verify_locked_until - Date.now()) / 60000);
+          res.writeHead(429, cors);
+          res.end(JSON.stringify({ error: 'locked', wait_minutes: wait }));
+          return;
+        }
+
+        // Check email matches vehicle owner
+        const vehicle = await getVehicleByToken(data.token);
+        if (!vehicle || vehicle.owner_email?.toLowerCase() !== data.email.toLowerCase()) {
+          const attempts = (rec.verify_attempts || 0) + 1;
+          const maxAttempts = 5;
+          if (attempts >= maxAttempts) {
+            await db.execute({
+              sql: 'UPDATE pins SET verify_attempts = ?, verify_locked_until = ? WHERE token = ?',
+              args: [attempts, Date.now() + 15 * 60 * 1000, data.token]
+            });
+            res.writeHead(429, cors);
+            res.end(JSON.stringify({ error: 'locked', wait_minutes: 15 }));
+            return;
+          }
+          await db.execute({
+            sql: 'UPDATE pins SET verify_attempts = ? WHERE token = ?',
+            args: [attempts, data.token]
+          });
+          res.writeHead(403, cors);
+          res.end(JSON.stringify({ error: 'email_mismatch', attempts_remaining: maxAttempts - attempts }));
+          return;
+        }
+
+        // Generate and send code
+        const code = generateCode();
+        const expires = Date.now() + 10 * 60 * 1000; // 10 minutes
+        await db.execute({
+          sql: 'UPDATE pins SET verify_code = ?, verify_code_expires = ?, verify_attempts = 0, owner_email = ? WHERE token = ?',
+          args: [code, expires, data.email, data.token]
+        });
+
+        await sendEmail(data.email, 'TexTrack — Your Verification Code', `
+          <div style="font-family:sans-serif;background:#0c0c0c;color:#ccc;padding:24px;">
+            <h2 style="color:#e09020;">TexTrack Verification</h2>
+            <p>Your verification code is:</p>
+            <div style="background:#111;border:1px solid #333;padding:16px;text-align:center;font-size:36px;font-weight:bold;color:#e09020;letter-spacing:8px;border-radius:4px;">\${code}</div>
+            <p style="margin-top:16px;font-size:12px;color:#666;">This code expires in 10 minutes.</p>
+          </div>
+        `);
+
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // ── PIN: SETUP VERIFY (check the code) ──────────────────────
+  if (url.pathname === '/pin/setup/verify' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.token || !data.code) {
+          res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token and code required' })); return;
+        }
+        const rec = await getPinRecord(data.token);
+        if (!rec || !rec.verify_code) {
+          res.writeHead(400, cors); res.end(JSON.stringify({ error: 'No pending verification' })); return;
+        }
+        if (Date.now() > rec.verify_code_expires) {
+          res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Code expired' })); return;
+        }
+        if (rec.verify_locked_until && Date.now() < rec.verify_locked_until) {
+          const wait = Math.ceil((rec.verify_locked_until - Date.now()) / 60000);
+          res.writeHead(429, cors);
+          res.end(JSON.stringify({ error: 'locked', wait_minutes: wait }));
+          return;
+        }
+
+        if (data.code !== rec.verify_code) {
+          const attempts = (rec.verify_attempts || 0) + 1;
+          if (attempts >= 5) {
+            await db.execute({
+              sql: 'UPDATE pins SET verify_attempts = ?, verify_locked_until = ? WHERE token = ?',
+              args: [attempts, Date.now() + 15 * 60 * 1000, data.token]
+            });
+            res.writeHead(429, cors);
+            res.end(JSON.stringify({ error: 'locked', wait_minutes: 15 }));
+            return;
+          }
+          await db.execute({
+            sql: 'UPDATE pins SET verify_attempts = ? WHERE token = ?',
+            args: [attempts, data.token]
+          });
+          res.writeHead(400, cors);
+          res.end(JSON.stringify({ error: 'wrong_code', attempts_remaining: 5 - attempts }));
+          return;
+        }
+
+        // Code matches — mark verified
+        await db.execute({
+          sql: 'UPDATE pins SET verified = 1, verify_code = NULL, verify_attempts = 0 WHERE token = ?',
+          args: [data.token]
+        });
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // ── PIN: SET ────────────────────────────────────────────────
+  if (url.pathname === '/pin/set' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.token || !data.new_pin || data.new_pin.length !== 5) {
+          res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token and 5-digit PIN required' })); return;
+        }
+        const rec = await ensurePinRecord(data.token);
+        if (!rec) { res.writeHead(500, cors); res.end(JSON.stringify({ error: 'DB error' })); return; }
+
+        await db.execute({
+          sql: 'UPDATE pins SET pin_hash = ?, pin_attempts = 0, pin_locked_until = 0 WHERE token = ?',
+          args: [hashPin(data.new_pin), data.token]
+        });
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // ── PIN: VERIFY (login) ─────────────────────────────────────
+  if (url.pathname === '/pin/verify' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.token || !data.pin) {
+          res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token and PIN required' })); return;
+        }
+        const rec = await getPinRecord(data.token);
+        if (!rec || !rec.pin_hash) {
+          res.writeHead(400, cors); res.end(JSON.stringify({ error: 'no_pin' })); return;
+        }
+
+        // Check lockout
+        if (rec.pin_locked_until && Date.now() < rec.pin_locked_until) {
+          const wait = Math.ceil((rec.pin_locked_until - Date.now()) / 60000);
+          res.writeHead(429, cors);
+          res.end(JSON.stringify({ error: 'locked', wait_minutes: wait }));
+          return;
+        }
+
+        if (hashPin(data.pin) !== rec.pin_hash) {
+          const attempts = (rec.pin_attempts || 0) + 1;
+          const maxAttempts = 10;
+          if (attempts >= maxAttempts) {
+            await db.execute({
+              sql: 'UPDATE pins SET pin_attempts = ?, pin_locked_until = ? WHERE token = ?',
+              args: [attempts, Date.now() + 30 * 60 * 1000, data.token]
+            });
+            res.writeHead(429, cors);
+            res.end(JSON.stringify({ error: 'locked', wait_minutes: 30 }));
+            return;
+          }
+          await db.execute({
+            sql: 'UPDATE pins SET pin_attempts = ? WHERE token = ?',
+            args: [attempts, data.token]
+          });
+          res.writeHead(401, cors);
+          res.end(JSON.stringify({ error: 'wrong_pin', attempts_remaining: maxAttempts - attempts }));
+          return;
+        }
+
+        // PIN correct — reset attempts
+        await db.execute({
+          sql: 'UPDATE pins SET pin_attempts = 0, pin_locked_until = 0 WHERE token = ?',
+          args: [data.token]
+        });
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // ── PIN: RESET REQUEST (send reset link to owner email) ─────
+  if (url.pathname === '/pin/reset' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.token) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token required' })); return; }
+        const rec = await getPinRecord(data.token);
+        const vehicle = await getVehicleByToken(data.token);
+        if (!rec || !vehicle || !vehicle.owner_email) {
+          // Don't reveal whether token exists
+          res.writeHead(200, cors);
+          res.end(JSON.stringify({ success: true, message: 'If an account exists, a reset link was sent.' }));
+          return;
+        }
+
+        const resetCode = crypto.randomBytes(16).toString('hex');
+        const expires = Date.now() + 30 * 60 * 1000; // 30 minutes
+        await db.execute({
+          sql: 'UPDATE pins SET reset_code = ?, reset_code_expires = ? WHERE token = ?',
+          args: [resetCode, expires, data.token]
+        });
+
+        const siteUrl = process.env.SITE_URL || 'https://alkdiosp34.github.io/tantracker3000-pro';
+        const resetUrl = `\${siteUrl}/control.html?token=\${data.token}&reset=\${resetCode}`;
+        await sendEmail(vehicle.owner_email, 'TexTrack — PIN Reset', `
+          <div style="font-family:sans-serif;background:#0c0c0c;color:#ccc;padding:24px;">
+            <h2 style="color:#e09020;">TexTrack PIN Reset</h2>
+            <p>Click below to set a new PIN:</p>
+            <a href="\${resetUrl}" style="display:inline-block;background:#e09020;color:#000;padding:12px 24px;text-decoration:none;font-weight:bold;border-radius:4px;">Reset My PIN</a>
+            <p style="margin-top:16px;font-size:12px;color:#666;">This link expires in 30 minutes.</p>
+          </div>
+        `);
+
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ success: true, message: 'If an account exists, a reset link was sent.' }));
+      } catch(e) {
+        res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // ── PIN: RESET VALIDATE (use reset code to set new PIN) ─────
+  if (url.pathname === '/pin/reset/validate' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.token || !data.reset_code || !data.new_pin || data.new_pin.length !== 5) {
+          res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Invalid request' })); return;
+        }
+        const rec = await getPinRecord(data.token);
+        if (!rec || !rec.reset_code || rec.reset_code !== data.reset_code) {
+          res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Invalid or expired reset link' })); return;
+        }
+        if (Date.now() > rec.reset_code_expires) {
+          res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Reset link expired' })); return;
+        }
+
+        await db.execute({
+          sql: 'UPDATE pins SET pin_hash = ?, reset_code = NULL, reset_code_expires = NULL, pin_attempts = 0, pin_locked_until = 0 WHERE token = ?',
+          args: [hashPin(data.new_pin), data.token]
+        });
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
+      }
+    });
     return;
   }
 
