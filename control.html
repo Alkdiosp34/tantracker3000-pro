@@ -1395,7 +1395,7 @@ function exportHistory() {
   const blob = new Blob([csv], { type:'text/csv' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'tantracker3000_history_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.download = 'textrack_history_' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
 }
 

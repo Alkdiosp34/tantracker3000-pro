@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TanTracker3000 — Admin</title>
+<title>TexTrack — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -99,7 +99,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 <!-- LOGIN -->
 <div class="login" id="loginScreen">
   <div class="login-box">
-    <div class="login-title">TanTracker3000</div>
+    <div class="login-title">TexTrack</div>
     <div class="login-sub">ADMIN DASHBOARD</div>
     <div class="alert alert-error" id="loginError">Invalid admin key</div>
     <input type="password" id="adminKey" placeholder="Admin key" />
@@ -110,7 +110,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 <!-- APP -->
 <div class="app" id="appScreen">
   <div class="topbar">
-    <div class="logo">TanTracker3000 <span>ADMIN</span></div>
+    <div class="logo">TexTrack <span>ADMIN</span></div>
     <div class="nav">
       <button class="nav-btn active" onclick="showSection('dashboard')">DASHBOARD</button>
       <button class="nav-btn" onclick="showSection('vehicles')">VEHICLES</button>
@@ -216,7 +216,7 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 </div>
 
 <script>
-const SERVER = 'https://tantracker3000-pro.onrender.com';
+const SERVER = 'https://TexTrack-pro.onrender.com';
 let adminKey = '';
 let allVehicles = [];
 let allInstallers = [];
@@ -279,13 +279,29 @@ function renderRecent(vehicles) {
       <td>${v.owner_name || '--'}</td>
       <td>${v.installer_name || '--'}</td>
       <td><span class="badge badge-${v.plan === 'single' ? 'pending' : 'active'}">${v.plan === 'single' ? 'SINGLE $22' : 'MULTI $19'}</span></td>
-      <td><span class="badge badge-${v.status}">${v.status?.toUpperCase()}</span></td>
+      <td><span class="badge badge-${v.status}">${v.status?.toUpperCase()}</span>
+          ${v.status === 'cancelled' ? `<button class="btn-sm" style="margin-top:4px;border-color:#ff8800;color:#ff8800;" onclick="sendReactivationLink('${v.token}','${v.owner_email}')">⟳ REACTIVATE</button>` : ''}</td>
       <td style="font-size:12px;color:var(--muted);">${v.install_date ? new Date(v.install_date).toLocaleDateString() : '--'}</td>
     </tr>
   `).join('');
 }
 
 // ── VEHICLES TABLE ────────────────────────────────────────────
+async function sendReactivationLink(token, email) {
+  if (!confirm('Send reactivation email to ' + (email || 'customer') + '?\n\nThis will email them a link to restart service for $22/month.')) return;
+  try {
+    const result = await apiFetch('/reactivate/initiate', {
+      method: 'POST',
+      body: JSON.stringify({ token, send_email: true })
+    });
+    if (result.email_sent) {
+      alert('✓ Reactivation email sent to ' + (email || 'customer') + '\n\nLink expires: ' + new Date(result.expires_at).toLocaleDateString());
+    } else {
+      alert('⚠ Link generated but email not sent (RESEND_API_KEY may not be configured).\n\nManual URL:\n' + result.reactivate_url);
+    }
+  } catch(e) { alert('Error: ' + (e.message || 'Failed')); }
+}
+
 function renderVehicles(vehicles) {
   const tbody = document.getElementById('vehiclesTable');
   if (!vehicles.length) { tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px;">No vehicles yet</td></tr>'; return; }
@@ -297,7 +313,8 @@ function renderVehicles(vehicles) {
       <td style="font-family:'DM Mono',monospace;font-size:12px;">${v.owner_phone || '--'}</td>
       <td>${v.installer_name || '--'}</td>
       <td><span class="badge badge-${v.plan === 'single' ? 'pending' : 'active'}">${v.plan === 'single' ? '$22/mo' : '$19/mo'}</span></td>
-      <td><span class="badge badge-${v.status}">${v.status?.toUpperCase()}</span></td>
+      <td><span class="badge badge-${v.status}">${v.status?.toUpperCase()}</span>
+          ${v.status === 'cancelled' ? `<button class="btn-sm" style="margin-top:4px;border-color:#ff8800;color:#ff8800;" onclick="sendReactivationLink('${v.token}','${v.owner_email}')">⟳ REACTIVATE</button>` : ''}</td>
     </tr>
   `).join('');
 }
