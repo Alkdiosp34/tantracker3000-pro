@@ -369,10 +369,22 @@ async function addInstaller() {
       body: JSON.stringify({ name, email, phone })
     });
     document.getElementById('installerError').style.display = 'none';
-    document.getElementById('installerSuccess').textContent = 'Installer created! Send them the onboarding link below to set up their bank account.';
+
+    // Auto-generate payment link immediately
+    const linkResult = await apiFetch('/admin/payment-link', {
+      method: 'POST',
+      body: JSON.stringify({ installer_stripe_id: result.stripe_account_id, installer_name: name })
+    });
+
+    document.getElementById('installerSuccess').innerHTML =
+      `Installer created! <br><br>
+       <strong>Onboarding link</strong> (send to installer to set up bank account):<br>
+       <span style="word-break:break-all;font-size:11px;">${result.onboarding_url}</span><br><br>
+       <strong>Customer signup link / QR code URL:</strong><br>
+       <span style="word-break:break-all;font-size:11px;color:#00cc66;">${linkResult.url}</span><br><br>
+       <span style="color:#aaa;font-size:11px;">Generate QR code at qr-code-generator.com</span>`;
     document.getElementById('installerSuccess').style.display = 'block';
-    document.getElementById('qrUrl').textContent = result.onboarding_url;
-    document.getElementById('qrResult').style.display = 'block';
+    document.getElementById('qrResult').style.display = 'none';
     loadAll();
   } catch(e) {
     document.getElementById('installerError').textContent = e.message || 'Failed to create installer';
