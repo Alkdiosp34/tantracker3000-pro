@@ -1,0 +1,39 @@
+{
+  "name": "TexTrack",
+  "short_name": "TexTrack",
+  "description": "Real-time vehicle GPS tracking by TexTrack",
+  "start_url": "/tantracker3000-pro/control.html",
+  "display": "standalone",
+  "background_color": "#080d08",
+  "theme_color": "#00ff88",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23080d08' rx='24'/><text x='50%' y='58%' dominant-baseline='middle' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='80' font-weight='900' fill='%23e09020'>Tx</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23080d08' rx='64'/><text x='50%' y='58%' dominant-baseline='middle' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='220' font-weight='900' fill='%23e09020'>Tx</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "navigation"],
+  "shortcuts": [
+    {
+      "name": "Track Vehicle",
+      "short_name": "Track",
+      "url": "/tantracker3000-pro/control.html",
+      "description": "Open vehicle tracker"
+    },
+    {
+      "name": "My Account",
+      "short_name": "Account",
+      "url": "/tantracker3000-pro/account.html",
+      "description": "Manage your account"
+    }
+  ]
+}

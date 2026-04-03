@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TexTrack — Reactivate Service</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --bg: #080808; --panel: #0f0f0f; --border: #222;
+  --amber: #e09020; --green: #00cc66; --red: #ff3333;
+  --text: #ccc; --muted: #666; --bright: #fff;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background:var(--bg); color:var(--text);
+  font-family:'Share Tech Mono', monospace;
+  min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  padding:24px 16px 48px;
+}
+
+.logo { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:28px; color:var(--amber); letter-spacing:6px; margin-top:24px; margin-bottom:4px; }
+.logo-sub { font-size:10px; color:var(--muted); letter-spacing:3px; margin-bottom:32px; }
+
+.card {
+  background:var(--panel); border:1px solid var(--border); border-radius:8px;
+  padding:24px; width:100%; max-width:480px; margin-bottom:16px;
+}
+.card-title {
+  font-family:'Rajdhani',sans-serif; font-size:12px; letter-spacing:3px;
+  color:var(--muted); margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:10px;
+}
+
+/* WELCOME BACK BANNER */
+.welcome-banner {
+  background:linear-gradient(135deg,#1a1000,#0a0800); border:1px solid #ff8800;
+  border-radius:8px; padding:20px 24px; text-align:center;
+  width:100%; max-width:480px; margin-bottom:16px;
+}
+.wb-icon { font-size:36px; margin-bottom:8px; }
+.wb-title { font-family:'Rajdhani',sans-serif; font-size:22px; font-weight:700; color:var(--amber); letter-spacing:3px; margin-bottom:4px; }
+.wb-text { font-size:11px; color:#aaa; line-height:1.7; }
+
+/* VEHICLE INFO */
+.vehicle-info { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.vi-item { }
+.vi-label { font-size:9px; letter-spacing:2px; color:var(--muted); margin-bottom:2px; }
+.vi-val { font-family:'Rajdhani',sans-serif; font-size:18px; font-weight:700; color:var(--bright); }
+
+/* PRICING */
+.pricing-box {
+  background:#050505; border:1px solid var(--border); border-radius:6px;
+  padding:16px; margin-bottom:0;
+}
+.price-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #1a1a1a; font-size:12px; }
+.price-row:last-child { border:none; padding-bottom:0; }
+.price-label { color:var(--muted); }
+.price-val { color:var(--bright); font-family:'Rajdhani',sans-serif; font-size:16px; font-weight:700; }
+.price-val.green { color:var(--green); }
+.price-val.strike { text-decoration:line-through; color:var(--muted); font-size:12px; }
+.price-note { font-size:9px; color:var(--muted); margin-top:10px; letter-spacing:1px; line-height:1.6; text-align:center; }
+
+/* STEPS */
+.steps { display:flex; gap:0; margin-bottom:16px; width:100%; max-width:480px; }
+.step-pill { flex:1; text-align:center; font-size:9px; letter-spacing:1px; padding:8px 4px; color:var(--muted); border-bottom:2px solid var(--border); }
+.step-pill.active { color:var(--amber); border-color:var(--amber); }
+.step-pill.done { color:var(--green); border-color:var(--green); }
+
+/* CONFIRM SCREEN */
+.confirm-detail { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #1a1a1a; font-size:12px; }
+.confirm-detail:last-child { border:none; }
+.confirm-icon { font-size:18px; flex-shrink:0; }
+.confirm-label { color:var(--muted); font-size:10px; }
+.confirm-val { color:var(--bright); }
+
+/* BUTTON */
+.btn-primary {
+  width:100%; background:var(--amber); color:#000; border:none; border-radius:4px;
+  font-family:'Rajdhani',sans-serif; font-weight:700; font-size:16px; letter-spacing:3px;
+  padding:14px; cursor:pointer; margin-top:8px;
+}
+.btn-primary:hover { opacity:0.85; }
+.btn-primary:disabled { opacity:0.4; cursor:not-allowed; }
+.btn-secondary {
+  width:100%; background:transparent; color:var(--muted); border:1px solid var(--border);
+  border-radius:4px; font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:2px;
+  padding:10px; cursor:pointer; margin-top:8px;
+}
+.btn-secondary:hover { border-color:var(--amber); color:var(--amber); }
+
+/* SUCCESS */
+.success-box {
+  background:#050505; border:1px solid var(--green); border-radius:8px;
+  padding:32px 24px; text-align:center; width:100%; max-width:480px;
+}
+.success-icon { font-size:48px; margin-bottom:16px; }
+.success-title { font-family:'Rajdhani',sans-serif; font-size:24px; font-weight:700; color:var(--amber); letter-spacing:4px; margin-bottom:8px; }
+.success-text { font-size:12px; color:var(--muted); line-height:1.8; }
+
+/* ERROR */
+#errorScreen { display:none; text-align:center; padding:48px 24px; max-width:400px; }
+.error-icon { font-size:48px; margin-bottom:16px; }
+.error-title { font-family:'Rajdhani',sans-serif; font-size:20px; color:var(--red); letter-spacing:3px; margin-bottom:8px; }
+.error-text { font-size:12px; color:var(--muted); line-height:1.8; margin-bottom:16px; }
+.error-cta { font-size:12px; color:var(--amber); }
+
+/* LOADING */
+#loadingScreen { text-align:center; padding:64px 24px; }
+.loading-text { font-size:11px; color:var(--muted); letter-spacing:3px; animation:blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.err { color:var(--red); font-size:11px; margin-top:8px; min-height:18px; }
+.expiry-bar { font-size:10px; color:var(--muted); text-align:center; margin-bottom:12px; letter-spacing:1px; }
+.expiry-bar span { color:var(--amber); }
+
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-thumb { background:#222; border-radius:2px; }
+</style>
+</head>
+<body>
+
+<div class="logo">TexTrack</div>
+<div class="logo-sub">WELCOME BACK</div>
+
+<!-- LOADING -->
+<div id="loadingScreen">
+  <div class="loading-text">LOADING YOUR ACCOUNT...</div>
+</div>
+
+<!-- ERROR -->
+<div id="errorScreen">
+  <div class="error-icon">⚠</div>
+  <div class="error-title" id="errorTitle">LINK EXPIRED</div>
+  <div class="error-text" id="errorText">This reactivation link has expired or already been used.</div>
+  <div class="error-cta" id="errorCta"></div>
+</div>
+
+<!-- MAIN FLOW -->
+<div id="mainFlow" style="display:none;width:100%;max-width:480px;display:none;flex-direction:column;align-items:center;">
+
+  <!-- SCREEN 1: Welcome back + confirm details -->
+  <div id="screen1" style="width:100%;">
+
+    <div class="welcome-banner">
+      <div class="wb-icon">👋</div>
+      <div class="wb-title">WELCOME BACK</div>
+      <div class="wb-text">
+        We found your account and vehicle below.<br>
+        Reactivate in seconds — no installer visit needed.<br>
+        Your device is still in the vehicle and ready to go.
+      </div>
+    </div>
+
+    <div class="expiry-bar">Offer expires: <span id="expiryText">--</span></div>
+
+    <div class="card">
+      <div class="card-title">YOUR VEHICLE</div>
+      <div class="vehicle-info">
+        <div class="vi-item"><div class="vi-label">YEAR</div><div class="vi-val" id="vYear">--</div></div>
+        <div class="vi-item"><div class="vi-label">MAKE</div><div class="vi-val" id="vMake">--</div></div>
+        <div class="vi-item"><div class="vi-label">MODEL</div><div class="vi-val" id="vModel">--</div></div>
+        <div class="vi-item"><div class="vi-label">COLOR</div><div class="vi-val" id="vColor">--</div></div>
+        <div class="vi-item"><div class="vi-label">PLATE</div><div class="vi-val" id="vPlate">--</div></div>
+        <div class="vi-item"><div class="vi-label">VIN</div><div class="vi-val" id="vVin" style="font-size:12px;">--</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">REACTIVATION PRICING</div>
+      <div class="pricing-box">
+        <div class="price-row">
+          <div class="price-label">Installation fee</div>
+          <div>
+            <span class="price-val strike">$99.00</span>&nbsp;
+            <span class="price-val green">FREE</span>
+          </div>
+        </div>
+        <div class="price-row">
+          <div class="price-label">First month service</div>
+          <div class="price-val">$22.00</div>
+        </div>
+        <div class="price-row" style="margin-top:4px;">
+          <div class="price-label" style="color:var(--bright);">Due today</div>
+          <div class="price-val" style="color:var(--amber);font-size:20px;">$22.00</div>
+        </div>
+        <div class="price-note">
+          Then $22.00/month, billed automatically.<br>
+          4-month minimum from reactivation date.<br>
+          No installation visit required — device is already installed.
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="goToPay()">REACTIVATE FOR $22 →</button>
+    <div class="err" id="err1"></div>
+
+  </div>
+
+  <!-- SCREEN 2: Processing / redirect -->
+  <div id="screen2" style="display:none;width:100%;">
+    <div class="success-box">
+      <div class="success-icon">🔄</div>
+      <div class="success-title">ONE MOMENT</div>
+      <div class="success-text" id="screen2msg">
+        Preparing your payment link...
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: Already active -->
+  <div id="screen3" style="display:none;width:100%;">
+    <div class="success-box" style="border-color:var(--green);">
+      <div class="success-icon">✅</div>
+      <div class="success-title">ALREADY ACTIVE</div>
+      <div class="success-text">
+        This vehicle's service has already been reactivated.<br><br>
+        If you need help accessing your control panel, contact us.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SERVER = 'https://tantracker3000-pro1.onrender.com';
+const params = new URLSearchParams(window.location.search);
+const CODE = params.get('code');
+let vehicleData = {};
+
+// ── LOAD ──────────────────────────────────────────────────────
+async function loadReactivation() {
+  if (!CODE) {
+    showError('NO CODE', 'No reactivation code found. Please use the full link from your email or text message.', '');
+    return;
+  }
+  try {
+    const res = await fetch(SERVER + '/reactivate/' + CODE);
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (data.error === 'already_used') {
+        document.getElementById('loadingScreen').style.display = 'none';
+        showScreen('screen3');
+        document.getElementById('mainFlow').style.display = 'flex';
+        return;
+      }
+      if (data.error === 'expired') {
+        showError('LINK EXPIRED', 'This reactivation link expired after 30 days. Contact us and we\'ll send you a new one.', 'Text us at 713-XXX-XXXX');
+        return;
+      }
+      showError('INVALID LINK', data.error || 'This link is invalid.', '');
+      return;
+    }
+
+    vehicleData = data;
+
+    // Populate vehicle info
+    document.getElementById('vYear').textContent = data.year || '--';
+    document.getElementById('vMake').textContent = data.make || '--';
+    document.getElementById('vModel').textContent = data.model || '--';
+    document.getElementById('vColor').textContent = data.color || '--';
+    document.getElementById('vPlate').textContent = data.plate || '--';
+    document.getElementById('vVin').textContent = data.vin || '--';
+
+    const exp = new Date(data.expires_at);
+    document.getElementById('expiryText').textContent = exp.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainFlow').style.display = 'flex';
+
+  } catch(e) {
+    showError('CONNECTION ERROR', 'Could not reach the TexTrack server. Please check your connection and try again.', '');
+  }
+}
+
+function showError(title, text, cta) {
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('errorScreen').style.display = 'block';
+  document.getElementById('errorTitle').textContent = title;
+  document.getElementById('errorText').textContent = text;
+  document.getElementById('errorCta').textContent = cta;
+}
+
+function showScreen(id) {
+  ['screen1','screen2','screen3'].forEach(s => {
+    document.getElementById(s).style.display = s === id ? 'block' : 'none';
+  });
+}
+
+// ── REACTIVATE ────────────────────────────────────────────────
+async function goToPay() {
+  const btn = document.querySelector('.btn-primary');
+  btn.disabled = true;
+  btn.textContent = 'PREPARING PAYMENT...';
+  document.getElementById('err1').textContent = '';
+
+  showScreen('screen2');
+  document.getElementById('screen2msg').textContent = 'Preparing your payment link...';
+
+  try {
+    const res = await fetch(SERVER + '/reactivate/pay', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: CODE })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Failed to generate payment link');
+
+    document.getElementById('screen2msg').textContent = 'Redirecting to secure payment...';
+    setTimeout(() => { window.location.href = data.stripe_url; }, 1500);
+
+  } catch(e) {
+    showScreen('screen1');
+    document.getElementById('err1').textContent = e.message;
+    btn.disabled = false;
+    btn.textContent = 'REACTIVATE FOR $22 →';
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+loadReactivation();
+</script>
+</body>
+</html>

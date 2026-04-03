@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TanTracker3000 Pro — CONTROL</title>
+<title>TexTrack — Tracker</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="TexTrack">
+<meta name="theme-color" content="#00ff88">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%23080d08' rx='24'/><text x='50%25' y='58%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial Black,sans-serif' font-size='80' font-weight='900' fill='%23e09020'>Tx</text></svg>">
 <!-- Leaflet CSS — try unpkg first, fall back to cdnjs -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
   onerror="this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'"/>
@@ -267,12 +273,12 @@ footer {
 
 <!-- LOGIN -->
 <div id="loginScreen">
-  <div class="logo">TanTracker3000</div>
+  <div class="logo">TexTrack</div>
   <div class="logo-sub">CONTROL PANEL — AUTHENTICATE</div>
   <div class="login-form">
     <div class="pin-display" id="lpinDisplay">
       <div class="pin-dot" id="lp0"></div><div class="pin-dot" id="lp1"></div>
-      <div class="pin-dot" id="lp2"></div><div class="pin-dot" id="lp3"></div>
+      <div class="pin-dot" id="lp2"></div><div class="pin-dot" id="lp3"></div><div class="pin-dot" id="lp4"></div>
     </div>
     <div class="keypad">
       <div class="key" onclick="lkey('1')">1</div><div class="key" onclick="lkey('2')">2</div><div class="key" onclick="lkey('3')">3</div>
@@ -281,12 +287,35 @@ footer {
       <div class="key empty"></div><div class="key" onclick="lkey('0')">0</div><div class="key del" onclick="ldel()">⌫</div>
     </div>
     <div class="login-error" id="loginError"></div>
+    <div style="margin-top:12px;display:flex;gap:12px;justify-content:center;">
+      <button onclick="showForgotPin()" style="background:none;border:none;color:var(--muted);font-size:10px;letter-spacing:1px;cursor:pointer;font-family:inherit;">FORGOT PIN?</button>
+    </div>
+  </div>
+</div>
+
+<!-- SET PIN SCREEN (first use) -->
+<div id="setPinScreen" style="position:fixed;inset:0;z-index:5001;background:#000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+  <div class="logo" style="letter-spacing:3px;">TexTrack</div>
+  <div class="logo-sub">SET YOUR PIN</div>
+  <div class="login-form">
+    <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-align:center;margin-bottom:8px;" id="setPinLabel">CHOOSE A 5-DIGIT PIN</div>
+    <div class="pin-display" id="setPinDisplay">
+      <div class="pin-dot" id="sp0"></div><div class="pin-dot" id="sp1"></div>
+      <div class="pin-dot" id="sp2"></div><div class="pin-dot" id="sp3"></div><div class="pin-dot" id="sp4"></div>
+    </div>
+    <div class="keypad">
+      <div class="key" onclick="spkey('1')">1</div><div class="key" onclick="spkey('2')">2</div><div class="key" onclick="spkey('3')">3</div>
+      <div class="key" onclick="spkey('4')">4</div><div class="key" onclick="spkey('5')">5</div><div class="key" onclick="spkey('6')">6</div>
+      <div class="key" onclick="spkey('7')">7</div><div class="key" onclick="spkey('8')">8</div><div class="key" onclick="spkey('9')">9</div>
+      <div class="key empty"></div><div class="key" onclick="spkey('0')">0</div><div class="key del" onclick="spdel()">⌫</div>
+    </div>
+    <div class="login-error" id="setPinError"></div>
   </div>
 </div>
 
 <!-- HEADER -->
 <header>
-  <div class="brand">TanTracker3000 — CONTROL</div>
+  <div class="brand">TexTrack</div>
   <div class="header-right">
     <div class="eta-badge" id="etaBadge">
       <div>
@@ -393,6 +422,26 @@ footer {
       </div>
 
     </div>
+
+    <!-- TRANSFER SECTION -->
+    <div style="padding:14px;border-top:1px solid var(--border);margin-top:auto;flex-shrink:0;">
+      <div class="section-label" style="margin-bottom:8px;">▸ Sell / Transfer Vehicle</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:10px;">
+        Selling this vehicle? Generate a transfer link for the new owner. Your subscription ends when they complete payment.
+      </div>
+      <button class="cmd-btn" id="btnTransfer" onclick="initiateTransfer()" style="border-color:#ff8800;color:#ff8800;width:100%;justify-content:center;">
+        <span class="btn-icon">🔁</span> GENERATE TRANSFER LINK
+      </button>
+      <div id="transferResult" style="display:none;margin-top:12px;">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;">TRANSFER LINK (48hr expiry):</div>
+        <div id="transferUrl" style="font-size:10px;color:#ff8800;word-break:break-all;background:#0a0500;border:1px solid #331a00;border-radius:4px;padding:8px;margin-bottom:8px;"></div>
+        <div id="transferQr" style="text-align:center;margin-bottom:8px;"></div>
+        <button onclick="copyTransferLink()" class="cmd-btn" style="width:100%;justify-content:center;font-size:10px;">📋 COPY LINK</button>
+        <div style="font-size:9px;color:var(--muted);margin-top:6px;text-align:center;">New owner scans QR or opens link to complete transfer</div>
+      </div>
+      <div id="transferErr" style="color:#ff3333;font-size:10px;margin-top:6px;"></div>
+    </div>
+
     <!-- HISTORY TAB -->
     <div class="tab-panel" id="panelHist">
 
@@ -485,7 +534,78 @@ footer {
 // ════════════════════════════════════════════════
 const WS_URL = 'wss://tantracker3000-pro.onrender.com';
 const CLIENT_TOKEN = 'tt3k-6b013c92cface5653bcd4485'; // unique per customer — never share
-const CONTROL_PIN = '1234';
+// ── PIN CONFIG ───────────────────────────────────────────────
+// PIN is stored server-side, verified on login
+// First use: prompted to set PIN
+let sppin = '';
+let spConfirm = '';
+let spPhase = 'set'; // 'set' or 'confirm'
+
+function spkey(d) {
+  if (sppin.length >= 5) return;
+  sppin += d;
+  spupdate();
+  if (sppin.length === 5 && spPhase === 'set') {
+    setTimeout(() => { spPhase = 'confirm'; sppin = ''; spupdate(); document.getElementById('setPinLabel').textContent = 'CONFIRM YOUR PIN'; }, 300);
+  } else if (sppin.length === 5 && spPhase === 'confirm') {
+    setTimeout(spcheck, 100);
+  }
+}
+function spdel() { sppin = sppin.slice(0,-1); spupdate(); }
+function spupdate() {
+  for (let i=0;i<5;i++) document.getElementById('sp'+i).classList.toggle('filled', i < sppin.length);
+}
+async function spcheck() {
+  if (sppin !== spConfirm && spPhase === 'confirm') {
+    // Compare against stored first entry
+    if (sppin !== window._spFirst) {
+      document.getElementById('setPinError').textContent = 'PINs do not match — try again';
+      spPhase = 'set'; sppin = ''; spConfirm = ''; window._spFirst = '';
+      document.getElementById('setPinLabel').textContent = 'CHOOSE A 5-DIGIT PIN';
+      spupdate();
+      return;
+    }
+  }
+  if (spPhase === 'set') { window._spFirst = sppin; return; }
+
+  // Save PIN to server
+  try {
+    document.getElementById('setPinError').textContent = 'SAVING...';
+    const res = await fetch(SERVER_URL + '/pin/set', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: CLIENT_TOKEN, new_pin: sppin })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to set PIN');
+    // PIN set — store session in localStorage
+    localStorage.setItem('tt3k_pin_session_' + CLIENT_TOKEN, Date.now());
+    document.getElementById('setPinScreen').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'none';
+    initApp();
+  } catch(e) {
+    document.getElementById('setPinError').textContent = e.message;
+    spPhase = 'set'; sppin = ''; window._spFirst = '';
+    document.getElementById('setPinLabel').textContent = 'CHOOSE A 5-DIGIT PIN';
+    spupdate();
+  }
+}
+
+async function showForgotPin() {
+  try {
+    const res = await fetch(SERVER_URL + '/pin/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: CLIENT_TOKEN })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('loginError').textContent = '✓ CHECK YOUR EMAIL FOR A RESET LINK';
+    } else {
+      document.getElementById('loginError').textContent = data.error || 'Failed to send reset';
+    }
+  } catch(e) { document.getElementById('loginError').textContent = 'Connection error'; }
+}
 
 // Routing: OSRM public instance (free, no key needed, decent accuracy)
 // For traffic-aware routing we use the HERE Routing API v8 fallback
@@ -518,20 +638,53 @@ let peerConn = null, localStream = null;
 // LOGIN
 // ════════════════════════════════════════════════
 let lpin = '';
-function lkey(d) { lpin += d; lupdate(); if (lpin.length === 4) setTimeout(lcheck, 100); }
+function lkey(d) { lpin += d; lupdate(); if (lpin.length === 5) setTimeout(lcheck, 100); }
 function ldel() { lpin = lpin.slice(0,-1); lupdate(); }
 function lupdate() {
-  for (let i = 0; i < 4; i++)
+  for (let i = 0; i < 5; i++)
     document.getElementById('lp'+i).classList.toggle('filled', i < lpin.length);
 }
-function lcheck() {
-  if (lpin === CONTROL_PIN) {
+async function lcheck() {
+  // Check session cache first (5 min grace)
+  const session = localStorage.getItem('tt3k_pin_session_' + CLIENT_TOKEN);
+  if (session && Date.now() - parseInt(session) < 5 * 60 * 1000) {
     document.getElementById('loginScreen').style.display = 'none';
-    initApp();
-  } else {
-    document.getElementById('loginError').textContent = 'INCORRECT PIN';
+    initApp(); return;
+  }
+
+  try {
+    const res = await fetch(SERVER_URL + '/pin/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: CLIENT_TOKEN, pin: lpin })
+    });
+    const data = await res.json();
+    if (data.success) {
+      localStorage.setItem('tt3k_pin_session_' + CLIENT_TOKEN, Date.now());
+      document.getElementById('loginScreen').style.display = 'none';
+      initApp();
+    } else if (data.error === 'no_pin') {
+      // No PIN set — show set PIN screen
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('setPinScreen').style.display = 'flex';
+    } else {
+      document.getElementById('loginError').textContent = 'INCORRECT PIN';
+      lpin = ''; lupdate();
+      setTimeout(() => document.getElementById('loginError').textContent = '', 2000);
+    }
+  } catch(e) {
+    // Network error — check if PIN set exists, if not show set screen
+    const r2 = await fetch(SERVER_URL + '/pin/exists?token=' + CLIENT_TOKEN).catch(() => null);
+    if (r2) {
+      const d2 = await r2.json().catch(() => ({}));
+      if (!d2.exists) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('setPinScreen').style.display = 'flex';
+        return;
+      }
+    }
+    document.getElementById('loginError').textContent = 'CONNECTION ERROR — RETRY';
     lpin = ''; lupdate();
-    setTimeout(() => document.getElementById('loginError').textContent = '', 2000);
   }
 }
 
@@ -1053,7 +1206,7 @@ setInterval(() => {
 // ════════════════════════════════════════════════
 // HISTORY
 // ════════════════════════════════════════════════
-const SERVER_URL = 'https://tantracker3000-pro.onrender.com';
+const SERVER_URL = 'https://tantracker3000-pro1.onrender.com';
 let historyTrail = null;
 let historyData = [];
 
@@ -1160,20 +1313,180 @@ function exportHistory() {
   a.click();
 }
 
+// ── CHANGE PIN ───────────────────────────────────────────────
+function showChangePinFlow() {
+  // Reuse setPinScreen but in change mode
+  document.getElementById('setPinScreen').style.display = 'flex';
+  document.getElementById('setPinLabel').textContent = 'ENTER CURRENT PIN';
+  spPhase = 'current'; sppin = ''; spupdate();
+  window._changePinCurrent = null;
+  window._changePinNew = null;
+}
+
+// Override spcheck to handle change PIN flow
+const _origSpcheckForChange = window.spcheck;
+
+// ── TRANSFER ─────────────────────────────────────────────────
+async function initiateTransfer() {
+  const btn = document.getElementById('btnTransfer');
+  const errEl = document.getElementById('transferErr');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="btn-icon">⏳</span> GENERATING...';
+  errEl.textContent = '';
+
+  try {
+    const res = await fetch(SERVER_URL + '/transfer/initiate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: CLIENT_TOKEN })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.error || 'Failed to generate transfer link');
+
+    const url = data.transfer_url;
+    document.getElementById('transferUrl').textContent = url;
+
+    // Generate QR code
+    const qrDiv = document.getElementById('transferQr');
+    const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(url);
+    qrDiv.innerHTML = `<img src="${qrUrl}" style="border-radius:4px;border:2px solid #331a00;" width="160" height="160">`;
+
+    document.getElementById('transferResult').style.display = 'block';
+    btn.innerHTML = '<span class="btn-icon">🔁</span> REGENERATE LINK';
+    btn.disabled = false;
+
+    const exp = new Date(data.expires_at).toLocaleString();
+    errEl.style.color = '#ff8800';
+    errEl.textContent = 'Expires: ' + exp;
+  } catch(e) {
+    errEl.style.color = '#ff3333';
+    errEl.textContent = e.message;
+    btn.innerHTML = '<span class="btn-icon">🔁</span> GENERATE TRANSFER LINK';
+    btn.disabled = false;
+  }
+}
+
+function copyTransferLink() {
+  const url = document.getElementById('transferUrl').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = event.target.closest('button');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓ COPIED!';
+    setTimeout(() => btn.innerHTML = orig, 2000);
+  });
+}
+
 function initApp() {
-  // If Leaflet already loaded, go immediately. Otherwise wait for onload callback.
   if (typeof L !== 'undefined') {
     initMap();
     connectWS();
     startYourLocation();
+    showInstallPrompt();
   } else {
     window._mapReady = function() {
       initMap();
       connectWS();
       startYourLocation();
+      showInstallPrompt();
     };
   }
 }
+
+// ── PWA INSTALL PROMPT ───────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+});
+
+function showInstallPrompt() {
+  // Only show once, only if not already installed
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+  if (localStorage.getItem('tt3k_install_dismissed')) return;
+  if (!deferredPrompt && !/iPhone|iPad|iPod/.test(navigator.userAgent)) return;
+
+  setTimeout(() => {
+    const banner = document.createElement('div');
+    banner.id = 'installBanner';
+    banner.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#0d1a0d;border:1px solid var(--green);border-radius:6px;padding:10px 16px;display:flex;align-items:center;gap:12px;z-index:9990;max-width:320px;width:90%;';
+    banner.innerHTML = `
+      <div style="font-size:20px;">📱</div>
+      <div style="flex:1;font-size:10px;letter-spacing:1px;color:var(--text);line-height:1.6;">
+        Add TexTrack to your home screen for quick access
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button onclick="installApp()" style="background:var(--green);color:#000;border:none;border-radius:3px;font-size:9px;font-weight:bold;padding:5px 8px;cursor:pointer;letter-spacing:1px;">INSTALL</button>
+        <button onclick="dismissInstall()" style="background:none;border:none;color:var(--muted);font-size:9px;cursor:pointer;">dismiss</button>
+      </div>`;
+    document.body.appendChild(banner);
+  }, 10000); // Show after 10s of use
+}
+
+async function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+  } else {
+    // iOS instructions
+    alert('To install:\n1. Tap the Share button (□↑) at the bottom\n2. Tap "Add to Home Screen"\n3. Tap "Add"');
+  }
+  dismissInstall();
+}
+
+function dismissInstall() {
+  localStorage.setItem('tt3k_install_dismissed', '1');
+  const b = document.getElementById('installBanner');
+  if (b) b.remove();
+}
+
+// ── PIN RESET FROM EMAIL LINK ────────────────────────────────
+(async function checkReset() {
+  const params = new URLSearchParams(window.location.search);
+  const resetCode = params.get('reset');
+  if (!resetCode) return;
+
+  // Show set PIN screen with reset flow
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('setPinScreen').style.display = 'flex';
+  document.getElementById('setPinLabel').textContent = 'SET YOUR NEW PIN';
+
+  // Override spcheck to use reset validation
+  window._resetCode = resetCode;
+  console.log('[pin] Reset flow active');
+})();
+
+// Override spcheck if in reset mode
+const _origSpcheck = spcheck;
+window.spcheck_override = async function() {
+  if (!window._resetCode) { _origSpcheck(); return; }
+  if (spPhase === 'set') { window._spFirst = sppin; return; }
+  if (sppin !== window._spFirst) {
+    document.getElementById('setPinError').textContent = 'PINs do not match';
+    spPhase = 'set'; sppin = ''; window._spFirst = '';
+    document.getElementById('setPinLabel').textContent = 'SET YOUR NEW PIN';
+    spupdate(); return;
+  }
+  try {
+    const res = await fetch(SERVER_URL + '/pin/reset/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: CLIENT_TOKEN, reset_code: window._resetCode, new_pin: sppin })
+    });
+    const data = await res.json();
+    if (data.success) {
+      localStorage.setItem('tt3k_pin_session_' + CLIENT_TOKEN, Date.now());
+      document.getElementById('setPinScreen').style.display = 'none';
+      window._resetCode = null;
+      window.history.replaceState({}, '', window.location.pathname + '?token=' + CLIENT_TOKEN);
+      initApp();
+    } else {
+      document.getElementById('setPinError').textContent = data.error || 'Reset failed';
+      spPhase = 'set'; sppin = ''; window._spFirst = '';
+      spupdate();
+    }
+  } catch(e) { document.getElementById('setPinError').textContent = 'Connection error'; }
+};
 </script>
 </body>
 </html>
