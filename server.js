@@ -162,6 +162,30 @@ async function initDB() {
       }
     ], 'write');
     console.log('[db] Turso connected and ready');
+
+    // ── MIGRATIONS: add missing columns to existing tables ────
+    const migrations = [
+      'ALTER TABLE pins ADD COLUMN reset_code TEXT',
+      'ALTER TABLE pins ADD COLUMN reset_code_expires INTEGER',
+      'ALTER TABLE pins ADD COLUMN verified INTEGER DEFAULT 0',
+      'ALTER TABLE pins ADD COLUMN verify_code TEXT',
+      'ALTER TABLE pins ADD COLUMN verify_code_expires INTEGER',
+      'ALTER TABLE pins ADD COLUMN verify_attempts INTEGER DEFAULT 0',
+      'ALTER TABLE pins ADD COLUMN verify_locked_until INTEGER DEFAULT 0',
+      'ALTER TABLE pins ADD COLUMN pin_attempts INTEGER DEFAULT 0',
+      'ALTER TABLE pins ADD COLUMN pin_locked_until INTEGER DEFAULT 0',
+      'ALTER TABLE pins ADD COLUMN owner_email TEXT',
+    ];
+    for (const sql of migrations) {
+      try { await db.execute({ sql, args: [] }); } catch(e) {
+        // "duplicate column" errors are expected if column already exists — ignore
+        if (!e.message.includes('duplicate column')) {
+          console.log('[db] Migration skipped:', e.message.slice(0, 60));
+        }
+      }
+    }
+    console.log('[db] Migrations complete');
+
     pruneHistory();
   } catch(e) {
     console.error('[db] Init error:', e.message);
