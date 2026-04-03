@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TanTracker3000 Pro — CONTROL</title>
+<!-- Leaflet CSS — try unpkg first, fall back to cdnjs -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+  onerror="this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap');
+
+:root {
+  --red: #ff2233; --blue: #1144ff; --amber: #ffaa00;
+  --green: #00ff88; --dim: #080d08; --panel: #0d1a0d;
+  --border: #1a3a1a; --text: #88cc88; --bright: #ccffcc; --muted: #4a7a4a;
+  --route: #00aaff; --you: #ffaa00; --car: #00ff88;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background:var(--dim); color:var(--text);
+  font-family:'Share Tech Mono',monospace;
+  height:100dvh; display:flex; flex-direction:column; overflow:hidden;
+}
+
+body::after {
+  content:''; position:fixed; inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px);
+  pointer-events:none; z-index:9999;
+}
+
+/* LOGIN */
+#loginScreen {
+  position:fixed; inset:0; z-index:5000; background:#000;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+}
+.logo { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:32px; color:var(--green); letter-spacing:6px; }
+.logo-sub { font-size:10px; color:var(--muted); letter-spacing:3px; }
+.login-form { display:flex; flex-direction:column; align-items:center; gap:12px; }
+.pin-display { display:flex; gap:10px; }
+.pin-dot { width:14px; height:14px; border-radius:50%; border:1px solid #2a4a2a; background:transparent; }
+.pin-dot.filled { background:var(--green); border-color:var(--green); }
+.keypad { display:grid; grid-template-columns:repeat(3,70px); gap:8px; }
+.key {
+  height:60px; background:var(--panel); border:1px solid var(--border);
+  border-radius:4px; color:var(--bright); font-family:'Rajdhani',sans-serif;
+  font-size:22px; font-weight:500; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; transition:background 0.1s;
+}
+.key:active,.key:hover { background:#1a3a1a; border-color:var(--green); }
+.key.del { font-size:16px; color:#ff6666; }
+.key.empty { visibility:hidden; }
+.login-error { font-size:11px; color:var(--red); height:16px; letter-spacing:1px; }
+
+/* HEADER */
+header {
+  background:var(--panel); border-bottom:1px solid var(--border);
+  padding:10px 16px; display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0; gap:12px;
+}
+.brand { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:18px; color:var(--green); letter-spacing:3px; }
+.header-right { display:flex; align-items:center; gap:16px; }
+.conn-pill { display:flex; align-items:center; gap:6px; font-size:10px; letter-spacing:1px; }
+.dot { width:8px; height:8px; border-radius:50%; background:#333; }
+.dot.on { background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
+.dot.warn { background:var(--amber); }
+.dot.off { background:var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ETA BADGE in header */
+.eta-badge {
+  display:none; align-items:center; gap:8px;
+  background:#060d06; border:1px solid var(--border);
+  border-radius:4px; padding:4px 10px;
+}
+.eta-badge.show { display:flex; }
+.eta-time { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:20px; color:var(--amber); }
+.eta-meta { font-size:9px; color:var(--muted); line-height:1.4; }
+
+/* LAYOUT */
+.app-body { flex:1; display:grid; grid-template-columns:300px 1fr; overflow:hidden; }
+
+@media (max-width:700px) {
+  .app-body { grid-template-columns:1fr; grid-template-rows:auto 1fr; }
+  .sidebar { max-height:260px; overflow-y:auto; }
+}
+
+/* SIDEBAR */
+.sidebar {
+  background:var(--panel); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+
+.sidebar-tabs {
+  display:grid; grid-template-columns:1fr 1fr;
+  border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.tab {
+  padding:9px; text-align:center; font-size:10px; letter-spacing:1px;
+  color:var(--muted); cursor:pointer; border-bottom:2px solid transparent;
+  transition:all 0.15s;
+}
+.tab.active { color:var(--green); border-bottom-color:var(--green); }
+.tab:hover { color:var(--text); }
+
+.tab-panel { display:none; flex-direction:column; gap:10px; padding:12px; overflow-y:auto; flex:1; }
+.tab-panel.active { display:flex; }
+
+.section-label {
+  font-size:9px; letter-spacing:2px; color:var(--muted);
+  text-transform:uppercase; margin-bottom:2px;
+}
+
+/* TELEMETRY */
+.telem-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+.telem-cell { background:#060d06; border:1px solid var(--border); border-radius:3px; padding:8px; }
+.telem-label { font-size:9px; color:var(--muted); margin-bottom:2px; }
+.telem-val { font-size:13px; color:var(--amber); }
+
+/* DIRECTIONS PANEL */
+.directions-header {
+  background:#060d06; border:1px solid var(--border); border-radius:4px;
+  padding:10px; display:flex; flex-direction:column; gap:4px;
+}
+.dir-summary-row { display:flex; justify-content:space-between; align-items:baseline; }
+.dir-distance { font-size:18px; font-family:'Rajdhani',sans-serif; font-weight:700; color:var(--amber); }
+.dir-time { font-size:13px; color:var(--green); }
+.dir-traffic { font-size:10px; color:var(--muted); margin-top:2px; }
+.dir-traffic.heavy { color:var(--red); }
+.dir-traffic.moderate { color:var(--amber); }
+.dir-traffic.light { color:var(--green); }
+
+.route-status {
+  font-size:10px; letter-spacing:1px; padding:4px 8px;
+  border-radius:3px; text-align:center;
+  background:#060d06; border:1px solid var(--border); color:var(--muted);
+}
+.route-status.routing { color:var(--amber); border-color:#3a2a00; animation:blink 1s infinite; }
+.route-status.active { color:var(--green); border-color:#1a4a1a; }
+.route-status.error { color:var(--red); border-color:#3a1111; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* TURN BY TURN */
+.turns-list { display:flex; flex-direction:column; gap:4px; }
+.turn-item {
+  background:#060d06; border:1px solid var(--border); border-radius:3px;
+  padding:8px 10px; display:flex; align-items:center; gap:10px;
+  transition:border-color 0.2s;
+}
+.turn-item.next { border-color:var(--amber); background:#0d0a00; }
+.turn-item.next .turn-dist { color:var(--amber); }
+.turn-icon {
+  width:28px; height:28px; border-radius:3px; background:#0d1a0d;
+  border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+  font-size:14px; flex-shrink:0;
+}
+.turn-text { font-size:11px; color:var(--text); line-height:1.4; flex:1; }
+.turn-dist { font-size:10px; color:var(--muted); margin-top:2px; }
+
+/* BUTTONS */
+.btn-group { display:flex; flex-direction:column; gap:6px; }
+.cmd-btn {
+  width:100%; padding:12px; background:#060d06; border:1px solid var(--border);
+  border-radius:4px; color:var(--text); font-family:'Share Tech Mono',monospace;
+  font-size:12px; cursor:pointer; display:flex; align-items:center; gap:10px;
+  letter-spacing:1px; transition:all 0.15s; text-align:left;
+}
+.cmd-btn:hover { background:#0d1f0d; border-color:var(--green); }
+.cmd-btn:active { transform:scale(0.98); }
+.cmd-btn.danger { border-color:#441111; color:#ff8888; }
+.cmd-btn.danger:hover { background:#1a0505; border-color:var(--red); }
+.cmd-btn.active-flash { border-color:var(--red); color:var(--red); animation:flash-btn 0.6s infinite alternate; }
+@keyframes flash-btn { from{background:#060d06} to{background:#1a0505} }
+.cmd-btn.active-call { border-color:var(--green); color:var(--green); }
+.cmd-btn.active-track { border-color:var(--blue); color:#88aaff; }
+.btn-icon { font-size:16px; width:20px; text-align:center; }
+
+/* INTERCOM */
+.intercom-area { display:flex; flex-direction:column; gap:6px; }
+.call-status {
+  font-size:10px; color:var(--muted); padding:6px; text-align:center;
+  border:1px solid var(--border); border-radius:3px; background:#060d06;
+}
+.call-status.active { color:var(--green); border-color:#1a4a1a; }
+
+/* MAP */
+.map-area { position:relative; overflow:hidden; }
+#map { width:100%; height:100%; background:#0a0f0a; }
+.leaflet-tile { filter:invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.7); }
+.leaflet-control-attribution { display:none; }
+
+/* MAP OVERLAY CONTROLS */
+.map-overlay {
+  position:absolute; top:10px; right:10px; z-index:1000;
+  display:flex; flex-direction:column; gap:6px;
+}
+.map-btn {
+  background:var(--panel); border:1px solid var(--border); border-radius:4px;
+  padding:8px 10px; font-family:'Share Tech Mono',monospace; font-size:10px;
+  color:var(--text); cursor:pointer; letter-spacing:1px; white-space:nowrap;
+}
+.map-btn:hover { border-color:var(--green); color:var(--bright); }
+.map-btn.active { border-color:var(--blue); color:#88aaff; }
+
+/* SPEED INDICATOR on map */
+.speed-overlay {
+  position:absolute; bottom:40px; right:10px; z-index:1000;
+  background:var(--panel); border:1px solid var(--border); border-radius:4px;
+  padding:8px 12px; text-align:center; display:none;
+}
+.speed-overlay.show { display:block; }
+.speed-num { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:26px; color:var(--amber); }
+.speed-unit { font-size:9px; color:var(--muted); letter-spacing:1px; }
+
+/* REROUTE FLASH */
+.reroute-toast {
+  position:absolute; top:10px; left:50%; transform:translateX(-50%);
+  z-index:1001; background:#0d0a00; border:1px solid var(--amber);
+  border-radius:4px; padding:6px 14px; font-size:11px; color:var(--amber);
+  letter-spacing:1px; opacity:0; transition:opacity 0.3s; pointer-events:none;
+}
+.reroute-toast.show { opacity:1; }
+
+/* NO SIGNAL */
+.no-signal {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; z-index:500;
+  background:rgba(8,13,8,0.7); gap:8px; pointer-events:none;
+}
+.no-signal.hidden { display:none; }
+.no-signal-text { font-size:12px; color:var(--muted); letter-spacing:2px; }
+
+/* FOOTER */
+footer {
+  background:var(--panel); border-top:1px solid var(--border);
+  padding:6px 16px; display:flex; justify-content:space-between;
+  font-size:10px; color:var(--muted); flex-shrink:0; letter-spacing:1px;
+}
+.last-update { color:var(--text); }
+
+/* VOLTAGE BANNER */
+.volt-banner {
+  display:none; position:fixed; bottom:40px; left:50%; transform:translateX(-50%);
+  z-index:2000; border-radius:4px; padding:10px 20px; font-size:12px;
+  letter-spacing:1px; white-space:nowrap; pointer-events:none;
+  font-family:'Share Tech Mono',monospace;
+}
+.volt-banner.show { display:block; animation:slide-up 0.3s ease; }
+.volt-banner.warn { background:#1a1000; border:1px solid var(--amber); color:var(--amber); }
+.volt-banner.crit { background:#1a0505; border:1px solid var(--red); color:var(--red); animation:slide-up 0.3s ease, blink-r 0.8s infinite; }
+@keyframes slide-up { from{transform:translateX(-50%) translateY(20px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+@keyframes blink-r  { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+/* LEGEND */
+.legend {
+  position:absolute; bottom:40px; left:10px; z-index:1000;
+  background:var(--panel); border:1px solid var(--border); border-radius:4px;
+  padding:8px 10px; display:flex; flex-direction:column; gap:5px;
+}
+.legend-item { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--muted); }
+.legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="logo">TanTracker3000</div>
+  <div class="logo-sub">CONTROL PANEL — AUTHENTICATE</div>
+  <div class="login-form">
+    <div class="pin-display" id="lpinDisplay">
+      <div class="pin-dot" id="lp0"></div><div class="pin-dot" id="lp1"></div>
+      <div class="pin-dot" id="lp2"></div><div class="pin-dot" id="lp3"></div>
+    </div>
+    <div class="keypad">
+      <div class="key" onclick="lkey('1')">1</div><div class="key" onclick="lkey('2')">2</div><div class="key" onclick="lkey('3')">3</div>
+      <div class="key" onclick="lkey('4')">4</div><div class="key" onclick="lkey('5')">5</div><div class="key" onclick="lkey('6')">6</div>
+      <div class="key" onclick="lkey('7')">7</div><div class="key" onclick="lkey('8')">8</div><div class="key" onclick="lkey('9')">9</div>
+      <div class="key empty"></div><div class="key" onclick="lkey('0')">0</div><div class="key del" onclick="ldel()">⌫</div>
+    </div>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="brand">TanTracker3000 — CONTROL</div>
+  <div class="header-right">
+    <div class="eta-badge" id="etaBadge">
+      <div>
+        <div class="eta-time" id="etaTime">--</div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1px;">ETA</div>
+      </div>
+      <div class="eta-meta" id="etaMeta">-- mi<br>-- traffic</div>
+    </div>
+    <div class="conn-pill">
+      <div class="dot" id="cDot"></div>
+      <span id="cLabel">OFFLINE</span>
+    </div>
+  </div>
+</header>
+
+<!-- BODY -->
+<div class="app-body">
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="tab active" id="tabDir" onclick="switchTab('dir')">DIRECTIONS</div>
+      <div class="tab" id="tabCtrl" onclick="switchTab('ctrl')">CONTROLS</div>
+      <div class="tab" id="tabHist" onclick="switchTab('hist')">HISTORY</div>
+    </div>
+
+    <!-- DIRECTIONS TAB -->
+    <div class="tab-panel active" id="panelDir">
+
+      <div>
+        <div class="section-label">▸ Route Status</div>
+        <div class="route-status" id="routeStatus">AWAITING YOUR LOCATION</div>
+      </div>
+
+      <div>
+        <div class="section-label">▸ Summary</div>
+        <div class="directions-header" id="dirHeader" style="display:none">
+          <div class="dir-summary-row">
+            <span class="dir-distance" id="dirDist">--</span>
+            <span class="dir-time" id="dirTime">--</span>
+          </div>
+          <div class="dir-traffic" id="dirTraffic">Calculating traffic...</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">▸ Turn-by-Turn</div>
+        <div class="turns-list" id="turnsList">
+          <div style="font-size:11px;color:var(--muted);padding:8px 0;">Route will appear once both locations are known.</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">▸ Tracking</div>
+        <div class="btn-group">
+          <button class="cmd-btn active-track" id="btnAutoFollow" onclick="toggleAutoFollow()">
+            <span class="btn-icon">⊙</span> AUTO-FOLLOW ON
+          </button>
+          <button class="cmd-btn" onclick="fitBothOnMap()">
+            <span class="btn-icon">◱</span> FIT BOTH ON MAP
+          </button>
+          <button class="cmd-btn" id="btnGmaps" onclick="openGoogleMaps()" style="opacity:0.4;cursor:not-allowed;">
+            <span class="btn-icon">📍</span> OPEN IN GOOGLE MAPS
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CONTROLS TAB -->
+    <div class="tab-panel" id="panelCtrl">
+
+      <div>
+        <div class="section-label">▸ Telemetry</div>
+        <div class="telem-grid">
+          <div class="telem-cell"><div class="telem-label">LAT</div><div class="telem-val" id="dLat">---</div></div>
+          <div class="telem-cell"><div class="telem-label">LON</div><div class="telem-val" id="dLon">---</div></div>
+          <div class="telem-cell"><div class="telem-label">SPEED</div><div class="telem-val" id="dSpd">---</div></div>
+          <div class="telem-cell"><div class="telem-label">ACCURACY</div><div class="telem-val" id="dAcc">---</div></div>
+          <div class="telem-cell"><div class="telem-label">STATUS</div><div class="telem-val" id="dMoving" style="color:var(--amber)">WAITING</div></div>
+          <div class="telem-cell"><div class="telem-label">PING RATE</div><div class="telem-val" id="dPingRate" style="color:var(--muted)">--</div></div>
+          <div class="telem-cell" style="grid-column:1/-1"><div class="telem-label">BATTERY VOLTAGE</div><div class="telem-val" id="dVolt" style="color:var(--green)">--- V</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">▸ Stealth</div>
+        <div class="btn-group">
+          <button class="cmd-btn" onclick="sendCmd('screen_off')">
+            <span class="btn-icon">○</span> FORCE SCREEN OFF
+          </button>
+        </div>
+      </div>
+
+
+
+      <div>
+        <div class="section-label">▸ Listen</div>
+        <div class="intercom-area">
+          <div class="call-status" id="callStatus">MIC IDLE</div>
+          <button class="cmd-btn" id="btnCall" onclick="toggleCall()">
+            <span class="btn-icon">👂</span> LISTEN IN
+          </button>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:1px;padding:4px 0;">SILENT — device speaker off</div>
+        </div>
+      </div>
+
+    </div>
+    <!-- HISTORY TAB -->
+    <div class="tab-panel" id="panelHist">
+
+      <div>
+        <div class="section-label">▸ Time Range</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+          <button class="cmd-btn" onclick="loadHistory(1)" style="padding:8px;justify-content:center;font-size:10px;">1D</button>
+          <button class="cmd-btn" onclick="loadHistory(7)" style="padding:8px;justify-content:center;font-size:10px;">7D</button>
+          <button class="cmd-btn" onclick="loadHistory(30)" style="padding:8px;justify-content:center;font-size:10px;">30D</button>
+          <button class="cmd-btn" onclick="loadHistory(60)" style="padding:8px;justify-content:center;font-size:10px;">60D</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">▸ Summary</div>
+        <div class="telem-grid">
+          <div class="telem-cell"><div class="telem-label">PINGS</div><div class="telem-val" id="hPings">--</div></div>
+          <div class="telem-cell"><div class="telem-label">DAYS</div><div class="telem-val" id="hDays">--</div></div>
+          <div class="telem-cell"><div class="telem-label">FIRST SEEN</div><div class="telem-val" id="hFirst" style="font-size:10px;">--</div></div>
+          <div class="telem-cell"><div class="telem-label">LAST SEEN</div><div class="telem-val" id="hLast" style="font-size:10px;">--</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">▸ Trail</div>
+        <div style="font-size:10px;color:var(--muted);line-height:1.6;" id="hStatus">Select a time range above to load history.</div>
+      </div>
+
+      <div class="btn-group">
+        <button class="cmd-btn" onclick="clearHistoryTrail()">
+          <span class="btn-icon">✕</span> CLEAR TRAIL
+        </button>
+        <button class="cmd-btn" onclick="exportHistory()">
+          <span class="btn-icon">↓</span> EXPORT CSV
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- MAP -->
+  <div class="map-area">
+    <div id="map"></div>
+
+    <div class="no-signal" id="noSignal">
+      <div style="font-size:28px;opacity:0.3">◌</div>
+      <div class="no-signal-text">AWAITING CAR UNIT SIGNAL</div>
+    </div>
+
+    <div class="map-overlay">
+      <button class="map-btn" onclick="map.zoomIn()">＋</button>
+      <button class="map-btn" onclick="map.zoomOut()">－</button>
+    </div>
+
+    <div class="speed-overlay" id="speedOverlay">
+      <div class="speed-num" id="speedNum">0</div>
+      <div class="speed-unit">MPH</div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--car)"></div>TARGET VEHICLE</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--you)"></div>YOUR POSITION</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--route);border-radius:2px;width:16px;height:4px;"></div>ROUTE</div>
+    </div>
+
+    <div class="reroute-toast" id="rerouteToast">↺ REROUTING...</div>
+  </div>
+</div>
+
+<footer>
+  <span id="lastSeen">LAST UPDATE: --</span>
+  <span class="last-update" id="fPings">PINGS: 0</span>
+  <span id="fTime">--:--:--</span>
+</footer>
+<div id="voltBanner" class="volt-banner"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
+  onerror="
+    var s=document.createElement('script');
+    s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload=function(){if(window._mapReady)window._mapReady();};
+    document.head.appendChild(s);
+  "
+  onload="if(window._mapReady)window._mapReady();">
+</script>
+<script>
+// ════════════════════════════════════════════════
+// CONFIG — update these before deploying
+// ════════════════════════════════════════════════
+const WS_URL = 'wss://tantracker3000-pro.onrender.com';
+const CLIENT_TOKEN = 'tt3k-6b013c92cface5653bcd4485'; // unique per customer — never share
+const CONTROL_PIN = '1234';
+
+// Routing: OSRM public instance (free, no key needed, decent accuracy)
+// For traffic-aware routing we use the HERE Routing API v8 fallback
+// and OSRM as primary. Set your HERE API key below for real traffic data.
+// Free tier: 250,000 requests/month — more than enough.
+// Sign up: developer.here.com
+const HERE_API_KEY = ''; // optional — leave blank to use OSRM only
+
+// How many seconds between route refreshes (car is moving)
+const REROUTE_INTERVAL = 10;
+// How many meters the car must move before triggering a reroute
+const REROUTE_THRESHOLD = 50;
+
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let map, routeLine, carMarker, youMarker;
+let lastLat = null, lastLon = null;
+let yourLat = null, yourLon = null;
+let pingsRx = 0;
+let autoFollow = true;
+let routeActive = false;
+let lastRoutedCarLat = null, lastRoutedCarLon = null;
+let routeTimer = null;
+let ws;
+let flashing = false, inCall = false;
+let peerConn = null, localStream = null;
+
+// ════════════════════════════════════════════════
+// LOGIN
+// ════════════════════════════════════════════════
+let lpin = '';
+function lkey(d) { lpin += d; lupdate(); if (lpin.length === 4) setTimeout(lcheck, 100); }
+function ldel() { lpin = lpin.slice(0,-1); lupdate(); }
+function lupdate() {
+  for (let i = 0; i < 4; i++)
+    document.getElementById('lp'+i).classList.toggle('filled', i < lpin.length);
+}
+function lcheck() {
+  if (lpin === CONTROL_PIN) {
+    document.getElementById('loginScreen').style.display = 'none';
+    initApp();
+  } else {
+    document.getElementById('loginError').textContent = 'INCORRECT PIN';
+    lpin = ''; lupdate();
+    setTimeout(() => document.getElementById('loginError').textContent = '', 2000);
+  }
+}
+
+// ════════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════════
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  const map = { dir: 'Dir', ctrl: 'Ctrl', hist: 'Hist' };
+  document.getElementById('tab' + map[t]).classList.add('active');
+  document.getElementById('panel' + map[t]).classList.add('active');
+}
+
+// ════════════════════════════════════════════════
+// MAP INIT
+// ════════════════════════════════════════════════
+function initMap() {
+  map = L.map('map', { zoomControl:false, attributionControl:false }).setView([29.76, -95.36], 13);
+  // CartoDB Voyager — no referer restrictions, works from file:// and hosted
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19,
+    subdomains: 'abcd'
+  }).addTo(map);
+
+  // Car marker — green pulsing dot
+  const carIcon = L.divIcon({
+    html: `<div style="position:relative;width:20px;height:20px;">
+      <div style="position:absolute;inset:0;border-radius:50%;background:#00ff88;opacity:0.25;animation:ripple 2s infinite"></div>
+      <div style="position:absolute;top:3px;left:3px;width:14px;height:14px;background:#00ff88;border-radius:50%;border:2px solid #080d08;box-shadow:0 0 8px #00ff88"></div>
+    </div>
+    <style>@keyframes ripple{0%{transform:scale(1);opacity:0.25}100%{transform:scale(2.5);opacity:0}}</style>`,
+    iconSize:[20,20], iconAnchor:[10,10], className:''
+  });
+  carMarker = L.marker([29.76,-95.36], { icon:carIcon, zIndexOffset:1000 }).addTo(map);
+  carMarker.setOpacity(0);
+
+  // You marker — amber triangle
+  const youIcon = L.divIcon({
+    html: `<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #ffaa00;filter:drop-shadow(0 0 4px #ffaa00)"></div>`,
+    iconSize:[16,16], iconAnchor:[8,16], className:''
+  });
+  youMarker = L.marker([29.76,-95.36], { icon:youIcon, zIndexOffset:999 }).addTo(map);
+  youMarker.setOpacity(0);
+  youMarker.bindTooltip('YOU', { permanent:true, direction:'top', offset:[0,-16], className:'you-label' });
+
+  // Route polyline
+  routeLine = L.polyline([], {
+    color:'#00aaff', weight:5, opacity:0.85,
+    dashArray:null, lineJoin:'round', lineCap:'round'
+  }).addTo(map);
+
+  // Add tooltip label style
+  const s = document.createElement('style');
+  s.textContent = `.you-label { background:transparent; border:none; box-shadow:none; font-family:'Share Tech Mono',monospace; font-size:9px; color:#ffaa00; letter-spacing:1px; white-space:nowrap; }
+  .you-label::before { display:none; }
+  .leaflet-tooltip { background:transparent!important; border:none!important; box-shadow:none!important; }`;
+  document.head.appendChild(s);
+}
+
+// ════════════════════════════════════════════════
+// YOUR LOCATION — continuous watch
+// ════════════════════════════════════════════════
+function startYourLocation() {
+  if (!navigator.geolocation) {
+    setRouteStatus('error', 'GEOLOCATION NOT AVAILABLE');
+    return;
+  }
+  setRouteStatus('routing', 'ACQUIRING YOUR LOCATION...');
+  navigator.geolocation.watchPosition(pos => {
+    yourLat = pos.coords.latitude;
+    yourLon = pos.coords.longitude;
+    youMarker.setLatLng([yourLat, yourLon]);
+    youMarker.setOpacity(1);
+    // Trigger route if we have car position
+    if (lastLat !== null) maybeReroute();
+  }, err => {
+    setRouteStatus('error', 'YOUR LOCATION UNAVAILABLE');
+  }, { enableHighAccuracy:true, maximumAge:3000, timeout:15000 });
+}
+
+// ════════════════════════════════════════════════
+// CAR POSITION UPDATE
+// ════════════════════════════════════════════════
+function updateCarPosition(lat, lon, mph, acc, msg) {
+  lastLat = lat; lastLon = lon;
+  carMarker.setLatLng([lat, lon]);
+  carMarker.setOpacity(1);
+  document.getElementById('noSignal').classList.add('hidden');
+  document.getElementById('speedOverlay').classList.add('show');
+  document.getElementById('speedNum').textContent = mph;
+
+  // Enable Google Maps button
+  const gmBtn = document.getElementById('btnGmaps');
+  gmBtn.style.opacity = '1'; gmBtn.style.cursor = 'pointer';
+
+  document.getElementById('dLat').textContent = lat.toFixed(5);
+  document.getElementById('dLon').textContent = lon.toFixed(5);
+  document.getElementById('dSpd').textContent = mph + ' mph';
+  document.getElementById('dAcc').textContent = '±' + acc + 'm';
+  // Show movement state
+  const movEl = document.getElementById('dMoving');
+  if (movEl) {
+    movEl.textContent = (msg && msg.moving) ? '▶ MOVING' : '■ PARKED';
+    movEl.style.color = (msg && msg.moving) ? 'var(--green)' : 'var(--amber)';
+  }
+  // Show voltage if included in the ping
+  if (msg && msg.voltage) {
+    const v = parseFloat(msg.voltage);
+    const vEl = document.getElementById('dVolt');
+    vEl.textContent = v.toFixed(1) + ' V';
+    vEl.style.color = v >= 12.4 ? 'var(--green)' : v >= 12.0 ? 'var(--amber)' : 'var(--red)';
+  }
+  pingsRx++;
+  document.getElementById('fPings').textContent = 'PINGS: ' + pingsRx;
+  const rateEl = document.getElementById('dPingRate');
+  if (rateEl) rateEl.textContent = (msg && msg.moving) ? 'EVERY 5s' : 'EVERY 60s';
+  document.getElementById('lastSeen').textContent = 'LAST UPDATE: ' + new Date().toLocaleTimeString('en-US',{hour12:false});
+
+  // Auto-follow: keep car in view
+  if (autoFollow) {
+    if (yourLat !== null) {
+      fitBothOnMap(true);
+    } else {
+      map.setView([lat, lon], Math.max(map.getZoom(), 15));
+    }
+  }
+
+  // Reroute if car has moved enough
+  maybeReroute();
+}
+
+// ════════════════════════════════════════════════
+// REROUTING LOGIC
+// ════════════════════════════════════════════════
+function maybeReroute() {
+  if (yourLat === null || lastLat === null) return;
+
+  // Check if car moved enough to warrant a new route
+  if (lastRoutedCarLat !== null) {
+    const moved = haversine(lastLat, lastLon, lastRoutedCarLat, lastRoutedCarLon);
+    if (moved < REROUTE_THRESHOLD) return;
+  }
+
+  // Debounce: cancel pending reroute, schedule new one
+  clearTimeout(routeTimer);
+  routeTimer = setTimeout(fetchRoute, 800);
+}
+
+async function fetchRoute() {
+  if (yourLat === null || lastLat === null) return;
+  setRouteStatus('routing', 'ROUTING...');
+
+  try {
+    let result;
+    if (HERE_API_KEY) {
+      result = await fetchHereRoute();
+    } else {
+      result = await fetchOSRMRoute();
+    }
+
+    if (!result) { setRouteStatus('error', 'ROUTE UNAVAILABLE'); return; }
+
+    drawRoute(result.coords);
+    updateDirectionsPanel(result);
+    updateEtaBadge(result);
+    lastRoutedCarLat = lastLat;
+    lastRoutedCarLon = lastLon;
+
+    if (routeActive) showRerouteToast();
+    routeActive = true;
+    setRouteStatus('active', 'ROUTE ACTIVE — AUTO-UPDATING');
+
+  } catch(e) {
+    console.error('Route error:', e);
+    setRouteStatus('error', 'ROUTING FAILED — RETRYING');
+    routeTimer = setTimeout(fetchRoute, 5000);
+  }
+}
+
+// ─── OSRM (free, no key, no real traffic but very accurate roads) ───
+async function fetchOSRMRoute() {
+  const url = `https://router.project-osrm.org/route/v1/driving/${yourLon},${yourLat};${lastLon},${lastLat}?overview=full&geometries=geojson&steps=true&annotations=false`;
+  const r = await fetch(url);
+  const d = await r.json();
+  if (d.code !== 'Ok' || !d.routes.length) return null;
+
+  const route = d.routes[0];
+  const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+  const distMi = (route.distance * 0.000621371).toFixed(1);
+  const mins = Math.round(route.duration / 60);
+  const steps = extractOSRMSteps(route.legs[0].steps);
+
+  return { coords, distMi, mins, steps, traffic:'OSRM (no live traffic)', trafficLevel:'light' };
+}
+
+function extractOSRMSteps(steps) {
+  return steps.filter(s => s.maneuver.type !== 'depart' || steps.length === 1).map(s => {
+    const type = s.maneuver.type;
+    const mod = s.maneuver.modifier || '';
+    return {
+      icon: maneuverIcon(type, mod),
+      text: s.name ? `${humanManeuver(type, mod)} onto ${s.name}` : humanManeuver(type, mod),
+      dist: s.distance > 1000 ? (s.distance/1000).toFixed(1) + ' km' : Math.round(s.distance) + ' m'
+    };
+  }).slice(0, 12);
+}
+
+// ─── HERE Routing v8 (traffic-aware, free 250k/mo) ───────────────────
+async function fetchHereRoute() {
+  const url = `https://router.hereapi.com/v8/routes?transportMode=car&origin=${yourLat},${yourLon}&destination=${lastLat},${lastLon}&return=polyline,summary,actions,instructions&departureTime=now&apiKey=${HERE_API_KEY}`;
+  const r = await fetch(url);
+  const d = await r.json();
+  if (!d.routes || !d.routes.length) return null;
+
+  const route = d.routes[0];
+  const section = route.sections[0];
+  const summary = section.summary;
+
+  // Decode HERE flexible polyline
+  const coords = decodeHerePolyline(section.polyline);
+  const distMi = (summary.length * 0.000621371).toFixed(1);
+  const mins = Math.round(summary.duration / 60);
+  const baseMins = Math.round((summary.baseDuration || summary.duration) / 60);
+  const delay = mins - baseMins;
+  const trafficLevel = delay > 10 ? 'heavy' : delay > 3 ? 'moderate' : 'light';
+  const trafficText = delay > 0 ? `+${delay} min delay · ${trafficLevel} traffic` : 'Traffic clear';
+
+  const steps = (section.actions || []).slice(0, 12).map(a => ({
+    icon: hereActionIcon(a.action, a.direction),
+    text: a.instruction || a.action,
+    dist: a.length > 1000 ? (a.length/1000).toFixed(1) + ' km' : Math.round(a.length) + ' m'
+  }));
+
+  return { coords, distMi, mins, steps, traffic:trafficText, trafficLevel };
+}
+
+// HERE flexible polyline decoder
+function decodeHerePolyline(encoded) {
+  const result = [];
+  let index = 0, lat = 0, lng = 0;
+  const toSigned = val => val & 1 ? ~(val >> 1) : val >> 1;
+  while (index < encoded.length) {
+    let b, shift = 0, val = 0;
+    do { b = encoded.charCodeAt(index++) - 45; val |= (b & 0x1f) << shift; shift += 5; } while (b >= 32);
+    lat += toSigned(val); shift = 0; val = 0;
+    do { b = encoded.charCodeAt(index++) - 45; val |= (b & 0x1f) << shift; shift += 5; } while (b >= 32);
+    lng += toSigned(val);
+    result.push([lat / 1e5, lng / 1e5]);
+  }
+  return result;
+}
+
+// ════════════════════════════════════════════════
+// MAP DRAWING
+// ════════════════════════════════════════════════
+function drawRoute(coords) {
+  routeLine.setLatLngs(coords);
+}
+
+function fitBothOnMap(soft) {
+  if (yourLat === null || lastLat === null) return;
+  const bounds = L.latLngBounds([[yourLat, yourLon], [lastLat, lastLon]]);
+  map.fitBounds(bounds, { padding:[50,50], maxZoom:16, animate:!!soft });
+}
+
+function toggleAutoFollow() {
+  autoFollow = !autoFollow;
+  const btn = document.getElementById('btnAutoFollow');
+  if (autoFollow) {
+    btn.classList.add('active-track');
+    btn.innerHTML = '<span class="btn-icon">⊙</span> AUTO-FOLLOW ON';
+    if (lastLat !== null) fitBothOnMap(true);
+  } else {
+    btn.classList.remove('active-track');
+    btn.innerHTML = '<span class="btn-icon">○</span> AUTO-FOLLOW OFF';
+  }
+}
+
+// ════════════════════════════════════════════════
+// DIRECTIONS PANEL
+// ════════════════════════════════════════════════
+function updateDirectionsPanel(result) {
+  document.getElementById('dirHeader').style.display = 'flex';
+  document.getElementById('dirDist').textContent = result.distMi + ' mi';
+  document.getElementById('dirTime').textContent = formatMins(result.mins);
+
+  const trafficEl = document.getElementById('dirTraffic');
+  trafficEl.textContent = result.traffic;
+  trafficEl.className = 'dir-traffic ' + (result.trafficLevel || 'light');
+
+  const list = document.getElementById('turnsList');
+  list.innerHTML = '';
+  result.steps.forEach((step, i) => {
+    const div = document.createElement('div');
+    div.className = 'turn-item' + (i === 0 ? ' next' : '');
+    div.innerHTML = `
+      <div class="turn-icon">${step.icon}</div>
+      <div style="flex:1">
+        <div class="turn-text">${step.text}</div>
+        <div class="turn-dist">${step.dist}</div>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+function updateEtaBadge(result) {
+  const badge = document.getElementById('etaBadge');
+  const eta = new Date(Date.now() + result.mins * 60000);
+  document.getElementById('etaTime').textContent = formatMins(result.mins);
+  document.getElementById('etaMeta').innerHTML = `${result.distMi} mi<br>${result.traffic.split('·')[0].trim()}`;
+  badge.classList.add('show');
+}
+
+function setRouteStatus(type, msg) {
+  const el = document.getElementById('routeStatus');
+  el.className = 'route-status ' + type;
+  el.textContent = msg;
+}
+
+function showRerouteToast() {
+  const t = document.getElementById('rerouteToast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function formatMins(m) {
+  if (m < 60) return m + ' min';
+  return Math.floor(m/60) + 'h ' + (m%60) + 'm';
+}
+
+function maneuverIcon(type, mod) {
+  if (type === 'arrive') return '🏁';
+  if (type === 'depart') return '▶';
+  if (type === 'roundabout' || type === 'rotary') return '↻';
+  if (type === 'fork') return mod.includes('left') ? '↖' : '↗';
+  if (type === 'merge') return '⤵';
+  if (mod === 'left' || mod === 'sharp left') return '←';
+  if (mod === 'right' || mod === 'sharp right') return '→';
+  if (mod === 'slight left') return '↖';
+  if (mod === 'slight right') return '↗';
+  if (mod === 'uturn') return '↩';
+  return '↑';
+}
+
+function humanManeuver(type, mod) {
+  if (type === 'arrive') return 'Arrive at destination';
+  if (type === 'depart') return 'Depart';
+  if (type === 'roundabout') return 'Enter roundabout';
+  if (type === 'fork') return mod.includes('left') ? 'Keep left at fork' : 'Keep right at fork';
+  if (type === 'merge') return 'Merge';
+  if (mod === 'left') return 'Turn left';
+  if (mod === 'right') return 'Turn right';
+  if (mod === 'sharp left') return 'Sharp left';
+  if (mod === 'sharp right') return 'Sharp right';
+  if (mod === 'slight left') return 'Keep slight left';
+  if (mod === 'slight right') return 'Keep slight right';
+  if (mod === 'uturn') return 'Make a U-turn';
+  return 'Continue straight';
+}
+
+function hereActionIcon(action, dir) {
+  if (action === 'arrive') return '🏁';
+  if (action === 'depart') return '▶';
+  if (action === 'roundaboutExit') return '↻';
+  if (dir === 'left') return '←';
+  if (dir === 'right') return '→';
+  if (dir === 'slightLeft') return '↖';
+  if (dir === 'slightRight') return '↗';
+  if (dir === 'uTurn') return '↩';
+  return '↑';
+}
+
+function openGoogleMaps() {
+  if (lastLat === null) return;
+  const url = yourLat !== null
+    ? `https://www.google.com/maps/dir/${yourLat},${yourLon}/${lastLat},${lastLon}`
+    : `https://www.google.com/maps?q=${lastLat},${lastLon}`;
+  window.open(url, '_blank');
+}
+
+// ════════════════════════════════════════════════
+// WEBSOCKET
+// ════════════════════════════════════════════════
+function connectWS() {
+  try {
+    ws = new WebSocket(WS_URL);
+    ws.onopen = () => {
+      setConn('on', 'CONNECTED');
+      ws.send(JSON.stringify({ type:'register', role:'control', token: CLIENT_TOKEN }));
+    };
+    ws.onclose = () => { setConn('off', 'OFFLINE'); setTimeout(connectWS, 4000); };
+    ws.onerror = () => setConn('warn', 'ERROR');
+    ws.onmessage = e => handleMsg(JSON.parse(e.data));
+  } catch(e) { setConn('off', 'OFFLINE'); setTimeout(connectWS, 5000); }
+}
+
+function setConn(state, label) {
+  document.getElementById('cDot').className = 'dot ' + state;
+  document.getElementById('cLabel').textContent = label;
+}
+
+function handleMsg(msg) {
+  if (msg.type === 'location') updateCarPosition(msg.lat, msg.lon, msg.mph, Math.round(msg.acc), msg);
+  if (msg.type === 'location_final') handleFinalPing(msg);
+  if (msg.type === 'voltage_alert') handleVoltageAlert(msg);
+  if (msg.type === 'webrtc_answer') handleAnswer(msg);
+  if (msg.type === 'ice_candidate') handleIce(msg);
+}
+
+function sendCmd(type, extra = {}) {
+  if (ws && ws.readyState === WebSocket.OPEN)
+    ws.send(JSON.stringify({ type, target:'device', ...extra }));
+}
+
+// ════════════════════════════════════════════════
+// VOLTAGE ALERTS
+// ════════════════════════════════════════════════
+function handleVoltageAlert(msg) {
+  const level = msg.level;
+  const v = msg.voltage != null ? parseFloat(msg.voltage).toFixed(1) : '--';
+  let text, cls;
+  // Car battery events
+  if (level === 'warning')       { text = '⚠ CAR BATTERY: ' + v + 'V — DRAINING'; cls = 'warn'; }
+  if (level === 'low')           { text = '⚠ CAR BATTERY LOW: ' + v + 'V — LVD CUTOFF SOON'; cls = 'crit'; }
+  if (level === 'lvd_cutoff')    { text = '⚡ LVD TRIPPED AT ' + v + 'V — DEVICE NOW ON PHONE BATTERY'; cls = 'crit'; }
+  if (level === 'power_restored'){ text = '✓ CAR POWER RESTORED — CHARGING RESUMED'; cls = 'warn'; }
+  if (level === 'power_lost')    { text = '⚡ CAR POWER LOST — DEVICE ON PHONE BATTERY'; cls = 'crit'; }
+  if (level === 'device_revived'){ text = '✓ DEVICE REVIVED — CHARGING DETECTED, RESUMING'; cls = 'warn'; }
+  // Phone battery events (after LVD cutoff)
+  if (level === 'phone_warning') { text = '⚠ PHONE BATTERY LOW: ' + v + '% — TRACKING CONTINUES'; cls = 'warn'; }
+  if (level === 'phone_low')     { text = '⚠ PHONE BATTERY ' + v + '% — FINAL PING SENT'; cls = 'crit'; }
+  if (level === 'phone_critical'){ text = '🔴 PHONE BATTERY CRITICAL: ' + v + '% — DEVICE SHUTTING DOWN'; cls = 'crit'; }
+  if (text) showVoltBanner(text, cls);
+}
+
+function handleFinalPing(msg) {
+  // Treat it like a normal location update but flag it visually
+  updateCarPosition(msg.lat, msg.lon, msg.mph || 0, Math.round(msg.acc || 0));
+  showVoltBanner('🔴 FINAL PING RECEIVED — DEVICE POWERING DOWN', 'crit');
+}
+
+function showVoltBanner(text, cls) {
+  const el = document.getElementById('voltBanner');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'volt-banner show ' + cls;
+  // Don't auto-dismiss critical alerts
+  if (cls !== 'crit') setTimeout(() => el.classList.remove('show'), 8000);
+}
+
+// ════════════════════════════════════════════════
+// FLASH / ALARM / INTERCOM
+// ════════════════════════════════════════════════
+
+function toggleFlash() {
+  flashing = !flashing;
+  const btn = document.getElementById('btnFlash');
+  if (flashing) {
+    sendCmd('flash');
+    btn.classList.add('active-flash');
+    btn.innerHTML = '<span class="btn-icon">⚡</span> STOP FLASH';
+  } else {
+    sendCmd('stop_flash');
+    btn.classList.remove('active-flash');
+    btn.innerHTML = '<span class="btn-icon">⚡</span> FLASH LIGHTS';
+  }
+}
+
+async function toggleCall() {
+  if (inCall) { endCall(); return; }
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio:true });
+    peerConn = new RTCPeerConnection({ iceServers:[{ urls:'stun:stun.l.google.com:19302' }] });
+    localStream.getTracks().forEach(t => peerConn.addTrack(t, localStream));
+    peerConn.ontrack = e => { const a = new Audio(); a.srcObject = e.streams[0]; a.play(); };
+    peerConn.onicecandidate = e => { if (e.candidate) sendCmd('ice_candidate', { candidate:e.candidate }); };
+    const offer = await peerConn.createOffer();
+    await peerConn.setLocalDescription(offer);
+    sendCmd('webrtc_offer', { offer });
+    inCall = true;
+    document.getElementById('callStatus').textContent = 'CONNECTING...';
+    document.getElementById('callStatus').classList.add('active');
+    document.getElementById('btnCall').classList.add('active-call');
+    document.getElementById('btnCall').innerHTML = '<span class="btn-icon">🔴</span> END CALL';
+  } catch(e) { document.getElementById('callStatus').textContent = 'MIC ACCESS DENIED'; }
+}
+
+async function handleAnswer(msg) {
+  if (peerConn) { await peerConn.setRemoteDescription(msg.answer); document.getElementById('callStatus').textContent = 'CHANNEL OPEN'; }
+}
+async function handleIce(msg) { if (peerConn && msg.candidate) await peerConn.addIceCandidate(msg.candidate).catch(()=>{}); }
+function endCall() {
+  if (peerConn) { peerConn.close(); peerConn = null; }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  inCall = false;
+  document.getElementById('callStatus').textContent = 'MIC IDLE';
+  document.getElementById('callStatus').classList.remove('active');
+  document.getElementById('btnCall').classList.remove('active-call');
+  document.getElementById('btnCall').innerHTML = '<span class="btn-icon">👂</span> LISTEN IN';
+}
+
+// ════════════════════════════════════════════════
+// CLOCK + INIT
+// ════════════════════════════════════════════════
+setInterval(() => {
+  document.getElementById('fTime').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
+}, 1000);
+
+// ════════════════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════════════════
+const SERVER_URL = 'https://tantracker3000-pro.onrender.com';
+let historyTrail = null;
+let historyData = [];
+
+async function loadHistory(days) {
+  document.getElementById('hStatus').textContent = 'Loading ' + days + ' days of history...';
+  document.getElementById('hPings').textContent = '--';
+  document.getElementById('hDays').textContent = '--';
+  document.getElementById('hFirst').textContent = '--';
+  document.getElementById('hLast').textContent = '--';
+
+  try {
+    const res = await fetch(`${SERVER_URL}/history?token=${CLIENT_TOKEN}&days=${days}`);
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const data = await res.json();
+    historyData = data.pings;
+
+    if (!historyData.length) {
+      document.getElementById('hStatus').textContent = 'No history found for this period.';
+      return;
+    }
+
+    // Update summary
+    document.getElementById('hPings').textContent = historyData.length.toLocaleString();
+    document.getElementById('hDays').textContent = days;
+    document.getElementById('hFirst').textContent = new Date(historyData[0].ts).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    document.getElementById('hLast').textContent = new Date(historyData[historyData.length-1].ts).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    document.getElementById('hStatus').textContent = `Showing ${historyData.length.toLocaleString()} pings over ${days} days.`;
+
+    // Draw trail on map
+    drawHistoryTrail(historyData);
+
+  } catch(e) {
+    document.getElementById('hStatus').textContent = 'Failed to load: ' + e.message;
+  }
+}
+
+function drawHistoryTrail(pings) {
+  // Remove existing trail
+  if (historyTrail) { map.removeLayer(historyTrail); historyTrail = null; }
+
+  const coords = pings.map(p => [p.lat, p.lon]);
+  if (coords.length < 2) return;
+
+  // Draw as a polyline with color gradient — amber for old, green for recent
+  historyTrail = L.polyline(coords, {
+    color: '#ffaa00',
+    weight: 2,
+    opacity: 0.6,
+    dashArray: '4 4'
+  }).addTo(map);
+
+  // Add start and end markers
+  const startIcon = L.divIcon({
+    html: `<div style="width:10px;height:10px;background:#ffaa00;border-radius:50%;border:2px solid #080d08;"></div>`,
+    iconSize:[10,10], iconAnchor:[5,5], className:''
+  });
+  const endIcon = L.divIcon({
+    html: `<div style="width:10px;height:10px;background:#00ff88;border-radius:50%;border:2px solid #080d08;"></div>`,
+    iconSize:[10,10], iconAnchor:[5,5], className:''
+  });
+
+  L.marker(coords[0], { icon: startIcon })
+    .bindTooltip('Start: ' + new Date(pings[0].ts).toLocaleString(), { direction:'top' })
+    .addTo(map);
+  L.marker(coords[coords.length-1], { icon: endIcon })
+    .bindTooltip('End: ' + new Date(pings[pings.length-1].ts).toLocaleString(), { direction:'top' })
+    .addTo(map);
+
+  // Fit map to trail
+  map.fitBounds(historyTrail.getBounds(), { padding:[30,30] });
+}
+
+function clearHistoryTrail() {
+  if (historyTrail) { map.removeLayer(historyTrail); historyTrail = null; }
+  historyData = [];
+  document.getElementById('hStatus').textContent = 'Trail cleared.';
+  document.getElementById('hPings').textContent = '--';
+  document.getElementById('hDays').textContent = '--';
+  document.getElementById('hFirst').textContent = '--';
+  document.getElementById('hLast').textContent = '--';
+}
+
+function exportHistory() {
+  if (!historyData.length) {
+    document.getElementById('hStatus').textContent = 'No data to export. Load history first.';
+    return;
+  }
+  const rows = ['timestamp,lat,lon,mph,accuracy_m,moving,voltage'];
+  historyData.forEach(p => {
+    rows.push([
+      new Date(p.ts).toISOString(),
+      p.lat.toFixed(6), p.lon.toFixed(6),
+      p.mph || 0,
+      Math.round(p.acc || 0),
+      p.moving ? 'yes' : 'no',
+      p.voltage || ''
+    ].join(','));
+  });
+  const csv = rows.join('\n');
+  const blob = new Blob([csv], { type:'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tantracker3000_history_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+function initApp() {
+  // If Leaflet already loaded, go immediately. Otherwise wait for onload callback.
+  if (typeof L !== 'undefined') {
+    initMap();
+    connectWS();
+    startYourLocation();
+  } else {
+    window._mapReady = function() {
+      initMap();
+      connectWS();
+      startYourLocation();
+    };
+  }
+}
+</script>
+</body>
+</html>

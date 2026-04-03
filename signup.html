@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>TexTrack — Service Agreement & Signup</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#0c0c0c; --surface:#141414; --border:rgba(255,255,255,0.08);
+  --amber:#e09020; --green:#00cc66; --red:#cc3333;
+  --text:#e8e4de; --muted:#666; --white:#f0ede8;
+}
+body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif;
+  font-weight:300; min-height:100vh; }
+
+/* ── PROGRESS BAR ── */
+.progress { display:flex; padding:20px 24px 0; gap:8px; max-width:600px; margin:0 auto; }
+.step { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,0.1); transition:background 0.3s; }
+.step.done { background:var(--green); }
+.step.active { background:var(--amber); }
+
+/* ── SCREENS ── */
+.screen { display:none; max-width:600px; margin:0 auto; padding:24px; }
+.screen.active { display:block; }
+
+/* ── HEADER ── */
+.logo { font-family:'Bebas Neue',sans-serif; font-size:32px; color:var(--amber);
+  letter-spacing:1px; margin-bottom:4px; }
+.screen-title { font-size:15px; color:var(--muted); margin-bottom:20px;
+  font-family:'DM Mono',monospace; letter-spacing:1px; font-size:11px; text-transform:uppercase; }
+
+/* ── TOS BOX ── */
+.tos-container { position:relative; margin-bottom:20px; }
+.tos-scroll {
+  height:340px; overflow-y:auto; background:var(--surface);
+  border:1px solid var(--border); padding:20px; font-size:12px;
+  line-height:1.7; color:#aaa;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+}
+.tos-scroll p { margin-bottom:8px; }
+.tos-scroll ul { margin:8px 0 8px 20px; }
+.tos-scroll li { margin-bottom:4px; }
+.tos-scroll br { display:block; margin:4px 0; }
+
+/* All-caps sections */
+.tos-scroll p:has(+ p) { /* normal */ }
+
+.scroll-indicator {
+  position:sticky; bottom:0; left:0; right:0;
+  background:linear-gradient(transparent, var(--surface));
+  padding:20px 0 8px;
+  text-align:center;
+  font-family:'DM Mono',monospace;
+  font-size:10px; color:var(--amber);
+  letter-spacing:2px;
+  pointer-events:none;
+  transition:opacity 0.3s;
+}
+.scroll-indicator.hidden { opacity:0; }
+
+/* ── FORM ELEMENTS ── */
+.field { margin-bottom:16px; }
+.field label { display:block; font-family:'DM Mono',monospace; font-size:10px;
+  letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+.field input[type=text], .field input[type=email], .field input[type=tel],
+.field input[type=date], .field select {
+  width:100%; background:#1a1a1a; border:1px solid var(--border);
+  color:var(--white); padding:12px 14px;
+  font-family:'DM Sans',sans-serif; font-size:14px; outline:none;
+  -webkit-appearance:none; border-radius:0;
+}
+.field input:focus, .field select:focus { border-color:var(--amber); }
+.field.row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+/* ── CHECKBOXES ── */
+.checks { margin:16px 0; }
+.check-item { display:flex; gap:12px; align-items:flex-start;
+  padding:12px 0; border-bottom:1px solid var(--border); }
+.check-item:last-child { border-bottom:none; }
+.check-item input[type=checkbox] { flex-shrink:0; width:18px; height:18px;
+  margin-top:2px; accent-color:var(--amber); cursor:pointer; }
+.check-item label { font-size:12px; color:#aaa; line-height:1.5; cursor:pointer; }
+.check-item label strong { color:var(--white); font-weight:500; }
+
+/* ── SIGNATURE ── */
+.sig-field { margin:16px 0; }
+.sig-field label { display:block; font-family:'DM Mono',monospace; font-size:10px;
+  letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:8px; }
+.sig-input { width:100%; background:#0a0a0a; border:none;
+  border-bottom:2px solid var(--amber); color:var(--white);
+  padding:10px 4px; font-family:'DM Sans',sans-serif;
+  font-size:20px; font-style:italic; outline:none; }
+.sig-input::placeholder { color:#333; font-size:14px; font-style:normal; }
+.sig-note { font-size:10px; color:var(--muted); margin-top:6px;
+  font-family:'DM Mono',monospace; }
+
+/* ── BUTTONS ── */
+.btn-primary { width:100%; background:var(--amber); color:#0c0c0c;
+  border:none; padding:16px; font-family:'Bebas Neue',sans-serif;
+  font-size:22px; letter-spacing:1px; cursor:pointer;
+  transition:opacity 0.2s; margin-top:8px; }
+.btn-primary:disabled { opacity:0.3; cursor:not-allowed; }
+.btn-primary:not(:disabled):hover { opacity:0.9; }
+.btn-back { background:none; border:1px solid var(--border); color:var(--muted);
+  padding:10px 20px; font-family:'DM Mono',monospace; font-size:11px;
+  letter-spacing:2px; cursor:pointer; margin-bottom:16px; }
+.btn-back:hover { border-color:var(--muted); }
+
+/* ── PRICE SUMMARY ── */
+.price-summary { background:var(--surface); border:1px solid var(--border);
+  padding:20px; margin-bottom:20px; }
+.price-row { display:flex; justify-content:space-between; align-items:center;
+  padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+.price-row:last-child { border-bottom:none; font-weight:500;
+  font-size:16px; color:var(--amber); padding-top:12px; }
+.price-label { color:#aaa; }
+.price-val { font-family:'DM Mono',monospace; }
+
+/* ── SUCCESS ── */
+.success-icon { font-size:52px; text-align:center; margin:20px 0 12px; }
+.success-title { font-family:'Bebas Neue',sans-serif; font-size:40px;
+  color:var(--amber); text-align:center; margin-bottom:8px; }
+.success-sub { font-size:14px; color:var(--muted); text-align:center;
+  margin-bottom:28px; line-height:1.6; }
+.next-steps { background:var(--surface); border:1px solid var(--border); padding:20px; }
+.next-step { display:flex; gap:14px; padding:10px 0;
+  border-bottom:1px solid var(--border); }
+.next-step:last-child { border-bottom:none; }
+.step-num { font-family:'Bebas Neue',sans-serif; font-size:28px;
+  color:var(--amber); opacity:0.4; line-height:1; flex-shrink:0; width:24px; }
+.step-text { font-size:13px; color:#888; line-height:1.6; }
+.step-text strong { color:var(--white); font-weight:400; }
+
+/* ── ERROR ── */
+.error-msg { background:rgba(204,51,51,0.15); border:1px solid var(--red);
+  color:var(--red); padding:12px 16px; font-size:12px; margin-bottom:16px;
+  font-family:'DM Mono',monospace; display:none; }
+
+/* ── LOADING ── */
+.loading { text-align:center; padding:40px; color:var(--muted);
+  font-family:'DM Mono',monospace; font-size:12px; letter-spacing:2px; display:none; }
+
+@media(max-width:400px) {
+  .screen { padding:16px; }
+  .field.row { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- PROGRESS -->
+<div class="progress">
+  <div class="step active" id="prog1"></div>
+  <div class="step" id="prog2"></div>
+  <div class="step" id="prog3"></div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 1: VEHICLE & CUSTOMER INFO         -->
+<!-- ══════════════════════════════════════════ -->
+<div class="screen active" id="screen1">
+  <div style="padding-top:20px;">
+    <div class="logo">TexTrack</div>
+    <div class="screen-title">Step 1 of 3 · Your Information</div>
+  </div>
+
+  <div class="error-msg" id="err1">Please fill in all required fields.</div>
+
+  <div class="field">
+    <label>Full Legal Name *</label>
+    <input type="text" id="fullName" placeholder="As it appears on your ID" autocomplete="name" />
+  </div>
+  <div class="field row">
+    <div>
+      <label>Email *</label>
+      <input type="email" id="email" placeholder="your@email.com" autocomplete="email" />
+    </div>
+    <div>
+      <label>Phone *</label>
+      <input type="tel" id="phone" placeholder="713-555-0100" autocomplete="tel" />
+    </div>
+  </div>
+  <div class="field row">
+    <div>
+      <label>State of Residence *</label>
+      <select id="state">
+        <option value="">Select...</option>
+        <option>AL</option><option>AK</option><option>AZ</option><option>AR</option>
+        <option>CA</option><option>CO</option><option>CT</option><option>DE</option>
+        <option>FL</option><option>GA</option><option>HI</option><option>ID</option>
+        <option>IL</option><option>IN</option><option>IA</option><option>KS</option>
+        <option>KY</option><option>LA</option><option>ME</option><option>MD</option>
+        <option>MA</option><option>MI</option><option>MN</option><option>MS</option>
+        <option>MO</option><option>MT</option><option>NE</option><option>NV</option>
+        <option>NH</option><option>NJ</option><option>NM</option><option>NY</option>
+        <option>NC</option><option>ND</option><option>OH</option><option>OK</option>
+        <option>OR</option><option>PA</option><option>RI</option><option>SC</option>
+        <option>SD</option><option>TN</option><option selected>TX</option>
+        <option>UT</option><option>VT</option><option>VA</option><option>WA</option>
+        <option>WV</option><option>WI</option><option>WY</option>
+      </select>
+    </div>
+    <div>
+      <label>ZIP Code *</label>
+      <input type="text" id="zip" placeholder="77001" maxlength="5" inputmode="numeric" />
+    </div>
+  </div>
+
+  <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px;">
+    <div class="screen-title" style="margin-bottom:12px;">Vehicle Information</div>
+  </div>
+
+  <div class="field">
+    <label>Vehicle VIN *</label>
+    <input type="text" id="vin" placeholder="17-character VIN" maxlength="17"
+      style="text-transform:uppercase;font-family:DM Mono,monospace;letter-spacing:1px;" />
+  </div>
+  <div class="field row">
+    <div>
+      <label>Year *</label>
+      <input type="text" id="vYear" placeholder="2019" maxlength="4" inputmode="numeric" />
+    </div>
+    <div>
+      <label>Make *</label>
+      <input type="text" id="vMake" placeholder="Ford" />
+    </div>
+  </div>
+  <div class="field row">
+    <div>
+      <label>Model *</label>
+      <input type="text" id="vModel" placeholder="F-150" />
+    </div>
+    <div>
+      <label>Color *</label>
+      <input type="text" id="vColor" placeholder="White" />
+    </div>
+  </div>
+  <div class="field">
+    <label>License Plate + State *</label>
+    <input type="text" id="plate" placeholder="ABC-1234 TX"
+      style="text-transform:uppercase;" />
+  </div>
+
+  <button class="btn-primary" onclick="goToStep2()">CONTINUE TO AGREEMENT →</button>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 2: TOS + SIGNATURE                 -->
+<!-- ══════════════════════════════════════════ -->
+<div class="screen" id="screen2">
+  <div style="padding-top:20px;">
+    <button class="btn-back" onclick="goBack(1)">← BACK</button>
+    <div class="logo">TexTrack</div>
+    <div class="screen-title">Step 2 of 3 · Service Agreement</div>
+  </div>
+
+  <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6;">
+    Please read the full agreement below. Scroll to the bottom to unlock the signature fields.
+  </p>
+
+  <div class="tos-container">
+    <div class="tos-scroll" id="tosScroll">
+      <p>TEXTRACK, LLC</p>
+<br>
+<p>TERMS OF SERVICE, SERVICE AGREEMENT, AND RELEASE OF LIABILITY</p>
+<br>
+<p>Effective Date: April 3, 2026 · Applicable Nationwide</p>
+<br>
+<p>Governing Law: State of Texas · Arbitration: Federal Arbitration Act (9</p>
+<p>U.S.C. §1 et seq.) · Venue: Harris County, Texas</p>
+<br>
+<p>IMPORTANT NOTICE — READ BEFORE SIGNING OR PAYING: THIS AGREEMENT APPLIES</p>
+<p>TO ALL CUSTOMERS IN ALL U.S. STATES AND TERRITORIES. IT CONTAINS: (1)</p>
+<p>MANDATORY BINDING ARBITRATION UNDER THE FEDERAL ARBITRATION ACT — YOU</p>
+<p>WAIVE YOUR RIGHT TO A JURY TRIAL; (2) CLASS ACTION WAIVER — ALL DISPUTES</p>
+<p>RESOLVED INDIVIDUALLY; (3) YOUR MAXIMUM RECOVERY FOR SERVICE CLAIMS IS</p>
+<p>LIMITED TO $100.00; (4) YOUR MAXIMUM RECOVERY FOR HARDWARE/INSTALLATION</p>
+<p>CLAIMS IS LIMITED TO $1,000.00; (5) ALL CLAIMS MUST BE FILED WITHIN ONE</p>
+<p>YEAR EXCEPT AS REQUIRED BY APPLICABLE STATUTE; (6) YOU MUST INDEMNIFY</p>
+<p>TEXTRACK FOR CLAIMS ARISING FROM YOUR MISUSE OF THE SERVICE. BY</p>
+<p>COMPLETING PAYMENT OR USING THE SERVICE, YOU AGREE TO ALL TERMS.</p>
+<br>
+<p>INTERSTATE COMMERCE NOTICE: THIS AGREEMENT EVIDENCES A TRANSACTION</p>
+<p>INVOLVING INTERSTATE COMMERCE WITHIN THE MEANING OF THE FEDERAL</p>
+<p>ARBITRATION ACT (9 U.S.C. §1). THE SERVICE OPERATES THROUGH: SERVER</p>
+<p>INFRASTRUCTURE LOCATED IN VIRGINIA AND OTHER STATES (RENDER SERVICES,</p>
+<p>INC.); DATABASE INFRASTRUCTURE ON AMAZON WEB SERVICES (AWS) IN MULTIPLE</p>
+<p>STATES (TURSO); PAYMENT PROCESSING THROUGH STRIPE, INC.</p>
+<p>(DELAWARE/CALIFORNIA); CELLULAR NETWORKS OPERATING ACROSS STATE LINES;</p>
+<p>AND GPS SATELLITES OPERATED BY THE U.S. FEDERAL GOVERNMENT. THE FAA</p>
+<p>GOVERNS ALL ARBITRATION UNDER THIS AGREEMENT AND PREEMPTS ANY STATE LAW</p>
+<p>THAT CONFLICTS WITH THE FAA'S PRO-ARBITRATION POLICY.</p>
+<br>
+<p>ELECTRICAL SAFETY WARNING: THE TEXTRACK DEVICE IS HARDWIRED INTO YOUR</p>
+<p>VEHICLE'S 12-VOLT ELECTRICAL SYSTEM. IMPROPER INSTALLATION MAY CAUSE</p>
+<p>ELECTRICAL SHORT CIRCUITS, BATTERY DRAIN, VEHICLE DAMAGE, OR FIRE.</p>
+<p>INSTALLATION MUST BE PERFORMED ONLY BY AN AUTHORIZED TEXTRACK INSTALLER</p>
+<p>FOLLOWING TEXTRACK'S WRITTEN INSTALLATION PROCEDURES. IF YOU OBSERVE</p>
+<p>SPARKS, SMOKE, OR BURNING ODOR DURING OR AFTER INSTALLATION, IMMEDIATELY</p>
+<p>DISCONNECT POWER AND CONTACT A QUALIFIED ELECTRICIAN. TEXTRACK, LLC IS</p>
+<p>NOT RESPONSIBLE FOR FIRE, VEHICLE DAMAGE, OR PERSONAL INJURY RESULTING</p>
+<p>FROM INSTALLATION NOT PERFORMED IN ACCORDANCE WITH TEXTRACK'S WRITTEN</p>
+<p>PROCEDURES.</p>
+<br>
+<p>AUDIO MONITORING WARNING: THE LISTEN MODE FEATURE CAPTURES REAL-TIME</p>
+<p>AUDIO FROM INSIDE THE VEHICLE. FEDERAL LAW (18 U.S.C. §2511) AND</p>
+<p>APPLICABLE STATE LAWS RESTRICT AUDIO INTERCEPTION. LAWS VARY BY STATE:</p>
+<p>SOME STATES REQUIRE ALL PARTIES TO CONSENT TO AUDIO MONITORING. BY</p>
+<p>ACTIVATING LISTEN MODE, YOU REPRESENT THAT YOU ARE LEGALLY AUTHORIZED TO</p>
+<p>MONITOR AUDIO AND THAT ALL REQUIRED CONSENTS HAVE BEEN OBTAINED UNDER</p>
+<p>APPLICABLE FEDERAL AND STATE LAW. TEXTRACK DOES NOT RECORD OR STORE</p>
+<p>AUDIO. UNAUTHORIZED AUDIO INTERCEPTION MAY BE A FEDERAL CRIME AND A</p>
+<p>STATE FELONY.</p>
+<br>
+<p>1. Parties and Definitions</p>
+<br>
+<p>Service Provider: "TexTrack, LLC," "TexTrack," "Company," "we," "us," or</p>
+<p>"our" refers to TexTrack, LLC, a Texas limited liability company with</p>
+<p>its principal place of business in Houston, Harris County, Texas.</p>
+<p>TexTrack, LLC provides the Service throughout the United States.</p>
+<br>
+<p>Customer: "Customer," "you," or "your" refers to the individual or</p>
+<p>entity completing purchase. Customer represents they are eighteen (18)</p>
+<p>years of age or older and have full legal capacity to enter into this</p>
+<p>Agreement. This Agreement is not directed to minors.</p>
+<br>
+<p>Service: The "TexTrack Service" includes the Device hardware, software</p>
+<p>platform, web-based control panel, location history feature, and Listen</p>
+<p>Mode as described in Section 3.</p>
+<br>
+<p>Vehicle: The specific motor vehicle identified by VIN at time of</p>
+<p>purchase. The Service is associated with the Vehicle, not the Customer</p>
+<p>personally. A separate subscription is required for each Vehicle.</p>
+<br>
+<p>Device: The physical hardware unit installed in the Vehicle, including</p>
+<p>the cellular tracking module, protective enclosure, hardwire power kit</p>
+<p>with low-voltage disconnect circuit, and all associated components.</p>
+<br>
+<p>Installer: An independent contractor who has executed a written</p>
+<p>Independent Contractor Agreement with TexTrack, LLC, maintains current</p>
+<p>general liability insurance with minimum limits of $300,000 per</p>
+<p>occurrence naming TexTrack, LLC as an additional insured, and who</p>
+<p>operates under their own business name and license. Installers are not</p>
+<p>employees, agents, servants, joint venturers, or partners of TexTrack,</p>
+<p>LLC. TexTrack, LLC does not control the physical manner or method by</p>
+<p>which Installers perform installation services.</p>
+<br>
+<p>Minimum Period: The mandatory four (4) consecutive calendar month</p>
+<p>subscription commitment beginning on the date of Device installation.</p>
+<br>
+<p>Dispute: Any claim, controversy, or dispute of any kind arising out of</p>
+<p>or relating to this Agreement, the Service, the Device, or the</p>
+<p>relationship between Customer and TexTrack, LLC, including claims</p>
+<p>regarding the formation, validity, interpretation, or enforceability of</p>
+<p>this Agreement or any provision hereof.</p>
+<br>
+<p>AAA: The American Arbitration Association.</p>
+<br>
+<p>Third Party: Any person or entity other than Customer and TexTrack, LLC,</p>
+<p>including vehicle occupants, passengers, and persons whose</p>
+<p>communications may be captured by the Listen Mode feature.</p>
+<br>
+<p>Electronic Acceptance: Completion of payment, electronic checkbox</p>
+<p>confirmation, or any use of the Service constitutes Customer's</p>
+<p>electronic signature to this Agreement, valid and enforceable under the</p>
+<p>federal Electronic Signatures in Global and National Commerce Act</p>
+<p>(E-SIGN Act, 15 U.S.C. §7001 et seq.) and applicable state Uniform</p>
+<p>Electronic Transactions Act (UETA) provisions, including the Texas</p>
+<p>Uniform Electronic Transactions Act (Tex. Bus. &amp; Com. Code Ch. 322).</p>
+<br>
+<p>2. Acceptance and Nationwide Application</p>
+<br>
+<p>These Terms of Service, Service Agreement, and Release of Liability</p>
+<p>("Agreement") constitute a legally binding contract between Customer and</p>
+<p>TexTrack, LLC, enforceable in all U.S. states and territories.</p>
+<p>Customer's Electronic Acceptance constitutes full acceptance of this</p>
+<p>Agreement.</p>
+<br>
+<p>Governing Law: The substantive laws of the State of Texas govern this</p>
+<p>Agreement and all contractual disputes between the parties. For claims</p>
+<p>arising under applicable state consumer protection statutes, privacy</p>
+<p>laws, or other statutes that cannot be displaced by a contractual</p>
+<p>choice-of-law clause, the law of the state in which Customer resides at</p>
+<p>the time of the claim governs such statutory claims to the extent</p>
+<p>required by applicable law. Customer acknowledges that certain state</p>
+<p>consumer protection statutes may provide rights that supplement or</p>
+<p>cannot be waived by this Agreement, and nothing herein purports to waive</p>
+<p>such non-waivable statutory rights.</p>
+<br>
+<p>In consideration of Customer's payment of the fees set forth herein and</p>
+<p>Customer's agreement to be bound by these Terms, TexTrack, LLC agrees to</p>
+<p>provide the Service as described in Section 3. In consideration of</p>
+<p>TexTrack, LLC's provision of the Service, Customer agrees to the terms,</p>
+<p>limitations, and obligations set forth herein. The parties acknowledge</p>
+<p>this Agreement is supported by adequate and mutual consideration.</p>
+<br>
+<p>TexTrack, LLC may modify this Agreement upon thirty (30) days' written</p>
+<p>notice to the email address on file. TexTrack, LLC maintains a version</p>
+<p>history of all prior Agreement versions, accessible upon request.</p>
+<p>Continued use of the Service after the modification effective date</p>
+<p>constitutes acceptance of the modified terms. If Customer does not</p>
+<p>accept a modification, Customer may cancel the Service during the thirty</p>
+<p>(30) day notice period without payment of an early termination fee</p>
+<p>solely as a result of such modification, even if within the Minimum</p>
+<p>Period. Outside of a modification notice period, all other cancellation</p>
+<p>terms in Section 5 apply.</p>
+<br>
+<p>Electronic Records: TexTrack, LLC maintains electronic records of each</p>
+<p>Customer's acceptance, including: the timestamp of acceptance, the IP</p>
+<p>address used at time of acceptance, and the specific Agreement version</p>
+<p>accepted. These records constitute prima facie evidence of Customer's</p>
+<p>assent to this Agreement and shall be admissible in any arbitration or</p>
+<p>court proceeding as evidence of acceptance.</p>
+<br>
+<p>3. Service Description</p>
+<br>
+<p>TexTrack, LLC provides a passive vehicle monitoring service including:</p>
+<br>
+<ul>
+<li>Real-time GPS location tracking while the Vehicle is in motion</li>
+</ul>
+<br>
+<ul>
+<li>Sixty (60) day rolling location history via PIN-protected control</li>
+</ul>
+<p>panel</p>
+<br>
+<ul>
+<li>Silent one-way audio monitoring (Listen Mode) — streamed to</li>
+</ul>
+<p>Customer's control panel only; the Device emits no sound during</p>
+<p>Listen Mode</p>
+<br>
+<ul>
+<li>Remote Device screen control</li>
+</ul>
+<br>
+<ul>
+<li>Directional routing from Customer's location to Vehicle's location</li>
+</ul>
+<br>
+<ul>
+<li>Vehicle power state and battery monitoring</li>
+</ul>
+<br>
+<p>THE SERVICE EXPRESSLY DOES NOT INCLUDE: theft recovery guarantees; law</p>
+<p>enforcement notification or coordination; real-time automated alerts or</p>
+<p>geofencing; two-way audio; vehicle immobilization; insurance</p>
+<p>coordination; or any feature not listed above. TexTrack, LLC is a</p>
+<p>passive monitoring tool provider only.</p>
+<br>
+<p>4. Legal Use, Customer Certification, and Compliance</p>
+<br>
+<p>THIS SECTION IS A MATERIAL INDUCEMENT TO TEXTRACK, LLC'S AGREEMENT TO</p>
+<p>PROVIDE THE SERVICE. ANY MISREPRESENTATION VOIDS THIS AGREEMENT AND</p>
+<p>SUBJECTS CUSTOMER TO IMMEDIATE TERMINATION, CIVIL LIABILITY, AND</p>
+<p>CRIMINAL PROSECUTION UNDER APPLICABLE FEDERAL AND STATE LAW.</p>
+<br>
+<p>By purchasing or using the Service, Customer makes the following</p>
+<p>continuing representations and warranties:</p>
+<br>
+<ul>
+<li>Customer is the registered legal owner of the Vehicle OR has prior</li>
+</ul>
+<p>written consent from the registered legal owner. TexTrack, LLC</p>
+<p>reserves the right to request documentary proof within five (5)</p>
+<p>business days. Failure to provide documentation is grounds for</p>
+<p>immediate termination without refund.</p>
+<br>
+<ul>
+<li>Customer will not use the Service to monitor any person or vehicle</li>
+</ul>
+<p>without lawful authority and all required consents under applicable</p>
+<p>federal and state law.</p>
+<br>
+<ul>
+<li>Customer will comply with all applicable law, including: Texas Penal</li>
+</ul>
+<p>Code §16.06 (Unlawful Installation of Tracking Device) and the</p>
+<p>equivalent law of Customer's state of residence; Texas Penal Code</p>
+<p>§16.02 and applicable state wiretapping statutes; the federal</p>
+<p>Electronic Communications Privacy Act (18 U.S.C. §2510 et seq.); the</p>
+<p>federal Wiretap Act (18 U.S.C. §2511); the federal Stored</p>
+<p>Communications Act (18 U.S.C. §2701 et seq.); applicable state</p>
+<p>stalking and surveillance statutes; and all other applicable</p>
+<p>federal, state, and local law.</p>
+<br>
+<ul>
+<li>Customer is at least eighteen (18) years of age. The Service is not</li>
+</ul>
+<p>directed to persons under eighteen (18) years of age. Customer will</p>
+<p>not permit any minor to use the Service. Customer acknowledges that</p>
+<p>the Children's Online Privacy Protection Act (COPPA, 15 U.S.C. §6501</p>
+<p>et seq.) may apply if any minor's information is collected in</p>
+<p>connection with the Service, and Customer accepts sole</p>
+<p>responsibility for any such COPPA compliance obligations.</p>
+<br>
+<ul>
+<li>Customer acknowledges that installing a tracking device on a vehicle</li>
+</ul>
+<p>without the owner's consent may constitute a criminal offense under</p>
+<p>applicable federal and state law, including but not limited to Texas</p>
+<p>Penal Code §16.06, 18 U.S.C. §2261A (federal stalking statute), and</p>
+<p>equivalent laws in Customer's state.</p>
+<br>
+<ul>
+<li>Customer acknowledges that audio interception without consent may</li>
+</ul>
+<p>constitute a federal crime under 18 U.S.C. §2511 and a felony under</p>
+<p>applicable state law. Note: Audio interception laws vary by state.</p>
+<p>Some states (including California, Connecticut, Florida, Illinois,</p>
+<p>Maryland, Massachusetts, Michigan, Montana, Nevada, New Hampshire,</p>
+<p>Oregon, Pennsylvania, and Washington) require the consent of ALL</p>
+<p>parties to a conversation. Customer is solely responsible for</p>
+<p>determining the applicable consent requirements in Customer's</p>
+<p>jurisdiction.</p>
+<br>
+<p>TexTrack, LLC does not independently verify Vehicle ownership and relies</p>
+<p>entirely on Customer's representations. Provision of the Service does</p>
+<p>not make TexTrack, LLC liable for Customer's misuse.</p>
+<br>
+<p>CUSTOMER AGREES TO INDEMNIFY, DEFEND WITH COUNSEL REASONABLY ACCEPTABLE</p>
+<p>TO TEXTRACK, LLC, AND HOLD HARMLESS TEXTRACK, LLC AND ITS MEMBERS,</p>
+<p>MANAGERS, OFFICERS, EMPLOYEES, CONTRACTORS, INSURERS, SUCCESSORS, AND</p>
+<p>ASSIGNS (COLLECTIVELY "INDEMNIFIED PARTIES") FROM ALL CLAIMS, DAMAGES,</p>
+<p>FINES, PENALTIES, COSTS, AND ATTORNEYS' FEES, INCLUDING CLAIMS ARISING</p>
+<p>FROM THE INDEMNIFIED PARTIES' OWN NEGLIGENCE (BUT NOT GROSS NEGLIGENCE</p>
+<p>OR WILLFUL MISCONDUCT), TO THE FULLEST EXTENT PERMITTED BY APPLICABLE</p>
+<p>LAW IN THE JURISDICTION WHERE THE CLAIM ARISES, RESULTING FROM: (A)</p>
+<p>CUSTOMER'S MISUSE, ILLEGAL USE, OR UNAUTHORIZED USE OF THE SERVICE; (B)</p>
+<p>CUSTOMER'S BREACH OF ANY REPRESENTATION IN THIS SECTION 4; (C) ANY</p>
+<p>THIRD-PARTY CLAIM ARISING FROM CUSTOMER'S USE OF THE LISTEN MODE</p>
+<p>FEATURE; (D) CUSTOMER'S VIOLATION OF ANY APPLICABLE LAW IN CONNECTION</p>
+<p>WITH THE SERVICE; OR (E) ANY STALKING, HARASSMENT, DOMESTIC ABUSE, OR</p>
+<p>UNLAWFUL SURVEILLANCE CLAIM BY ANY THIRD PARTY. THIS INDEMNIFICATION</p>
+<p>DOES NOT APPLY TO CLAIMS ARISING SOLELY FROM TEXTRACK, LLC'S OWN GROSS</p>
+<p>NEGLIGENCE OR WILLFUL MISCONDUCT.</p>
+<br>
+<p>5. Billing, Payment, and Subscription Terms</p>
+<br>
+<p>5.1 Installation Fee</p>
+<br>
+<p>A non-refundable installation fee of Ninety-Nine Dollars ($99.00) is</p>
+<p>charged at time of purchase. This fee is earned upon scheduling</p>
+<p>confirmation and is non-refundable once installation is scheduled.</p>
+<br>
+<p>5.2 Monthly Subscription Fee</p>
+<br>
+<p>Recurring monthly subscription fees:</p>
+<br>
+<ul>
+<li>Single Vehicle: $22.00 per month</li>
+</ul>
+<br>
+<ul>
+<li>Two or more Vehicles (same account): $19.00 per month per Vehicle</li>
+</ul>
+<br>
+<p>By providing a payment method, Customer irrevocably authorizes TexTrack,</p>
+<p>LLC and its payment processor (Stripe, Inc.) to automatically charge the</p>
+<p>applicable monthly fee on each Billing Date without further</p>
+<p>authorization. Customer must maintain a valid payment method at all</p>
+<p>times.</p>
+<br>
+<p>5.3 Minimum Period and Early Termination Fee</p>
+<br>
+<p>The Service requires a four (4) month Minimum Period. Cancellation</p>
+<p>during the Minimum Period triggers an early termination fee ("ETF")</p>
+<p>equal to the total monthly subscription fees that would have accrued</p>
+<p>through the end of the Minimum Period. The ETF is a reasonable</p>
+<p>pre-estimate of actual damages and not a penalty: it reflects TexTrack,</p>
+<p>LLC's unrecovered per-unit hardware costs (approximately $72.00),</p>
+<p>installation coordination expenses, SIM activation costs, and</p>
+<p>anticipated subscription revenue over the Minimum Period, all of which</p>
+<p>are difficult to calculate precisely at the time of contracting but were</p>
+<p>reasonably estimated at the rates stated herein. TexTrack, LLC may</p>
+<p>charge the ETF to the payment method on file.</p>
+<br>
+<p>5.4 Cancellation After Minimum Period</p>
+<br>
+<p>After the Minimum Period, Customer may cancel via written notice.</p>
+<p>Cancellation is effective at end of the then-current billing cycle. No</p>
+<p>partial-month refunds.</p>
+<br>
+<p>5.5 Failed Payments; Chargebacks</p>
+<br>
+<p>If payment fails, TexTrack, LLC's payment processor will retry over up</p>
+<p>to eight (8) days. Reactivation requires all past-due amounts plus a</p>
+<p>$15.00 reactivation fee. Unwarranted chargebacks constitute material</p>
+<p>breach; TexTrack, LLC will contest and may charge a $50.00 processing</p>
+<p>fee per chargeback.</p>
+<br>
+<p>5.6 Price Changes</p>
+<br>
+<p>TexTrack, LLC may modify pricing upon thirty (30) days' written notice.</p>
+<p>Price changes will not take effect before the expiration of Customer's</p>
+<p>current Minimum Period.</p>
+<br>
+<p>5.7 Taxes</p>
+<br>
+<p>All fees exclude applicable federal, state, and local taxes, which will</p>
+<p>be added where required by law. Customer is responsible for all such</p>
+<p>taxes.</p>
+<br>
+<p>5.8 Collections</p>
+<br>
+<p>Past-due amounts accrue interest at 1.5% per month (18% per annum) or</p>
+<p>the maximum permitted by applicable law. TexTrack, LLC may recover all</p>
+<p>collection costs and attorneys' fees to the extent permitted by</p>
+<p>applicable law.</p>
+<br>
+<p>6. Hardware, Installation, and Electrical Safety</p>
+<br>
+<p>6.1 Hardware Ownership</p>
+<br>
+<p>Title to Device hardware transfers to Customer upon installation</p>
+<p>completion and receipt of the installation fee. Customer acknowledges</p>
+<p>that the Device was made available for inspection prior to installation</p>
+<p>and that Customer had a reasonable opportunity to inspect the Device</p>
+<p>before authorizing installation to proceed. Customer accepts the Device</p>
+<p>in its "as is" condition as of the time of installation, with all</p>
+<p>faults, and waives any claim based on the physical condition of the</p>
+<p>Device that was or reasonably should have been apparent upon inspection.</p>
+<br>
+<p>6.2 Independent Contractor Status of Installers</p>
+<br>
+<p>Device installation is performed by Installers who are independent</p>
+<p>contractors. TexTrack, LLC does not control the physical manner or</p>
+<p>method of installation. All Installers are required to: (a) operate</p>
+<p>under their own business name as an independent contractor; (b) provide</p>
+<p>Customer with written notice of their independent contractor status</p>
+<p>before commencing installation; (c) maintain general liability insurance</p>
+<p>of at least $300,000 per occurrence naming TexTrack, LLC as an</p>
+<p>additional insured. TexTrack, LLC is not vicariously liable for the</p>
+<p>acts, errors, omissions, negligence, or intentional misconduct of any</p>
+<p>Installer.</p>
+<br>
+<p>NO APPARENT AGENCY: Any branding, scheduling assistance, equipment</p>
+<p>provision, or use of the term "authorized installer" by TexTrack, LLC is</p>
+<p>for identification and administrative purposes only and does not create,</p>
+<p>and shall not be construed as creating, any agency relationship between</p>
+<p>TexTrack, LLC and any Installer. Customer expressly agrees not to rely</p>
+<p>on any belief, impression, or appearance of agency between TexTrack, LLC</p>
+<p>and any Installer, and waives any claim based on apparent agency or</p>
+<p>agency by estoppel against TexTrack, LLC for the acts or omissions of</p>
+<p>any Installer.</p>
+<br>
+<p>CUSTOMER ACKNOWLEDGMENT: Before installation begins, Customer will</p>
+<p>execute a separate written acknowledgment confirming the Installer is an</p>
+<p>independent contractor and not an employee or agent of TexTrack, LLC.</p>
+<p>Claims arising from installation workmanship must be brought against the</p>
+<p>Installer directly as the primary defendant.</p>
+<br>
+<p>6.3 Installer Qualification Standard</p>
+<br>
+<p>All Installers must demonstrate competency in automotive electrical</p>
+<p>systems prior to authorization by TexTrack, LLC. TexTrack, LLC uses the</p>
+<p>term "authorized installer" — not "professional installer" — to describe</p>
+<p>Installers. "Authorized" refers solely to the contractual relationship</p>
+<p>between the Installer and TexTrack, LLC. No representation of licensure,</p>
+<p>certification, or professional qualification is made or implied by use</p>
+<p>of the term "authorized."</p>
+<br>
+<p>6.4 Electrical System Risks; Assumption of Risk</p>
+<br>
+<p>ASSUMPTION OF ELECTRICAL RISK: Customer acknowledges and voluntarily</p>
+<p>assumes the following known risks: (a) improper installation may cause</p>
+<p>short circuits, electrical fires, or vehicle damage; (b) the Device</p>
+<p>draws continuous low-voltage power from the vehicle battery; (c) the LVD</p>
+<p>circuit does not guarantee protection in all circumstances; (d)</p>
+<p>installation requires penetration of vehicle interior panels or trim.</p>
+<p>Customer represents all known vehicle electrical issues have been</p>
+<p>disclosed to the Installer prior to installation.</p>
+<br>
+<p>TexTrack, LLC is not responsible for: (a) fire, electrical damage, or</p>
+<p>personal injury from installation not performed per TexTrack, LLC's</p>
+<p>written procedures; (b) pre-existing vehicle electrical conditions; (c)</p>
+<p>battery drain from a malfunctioning charging system, pre-existing</p>
+<p>battery condition, or extended non-use; or (d) third-party modification</p>
+<p>to the Device after installation. Customer acknowledges receiving</p>
+<p>TexTrack, LLC's Device Technical Information, which discloses the</p>
+<p>Device's continuous power draw, LVD cutoff threshold, and recommended</p>
+<p>vehicle electrical system requirements. Customer represents they have</p>
+<p>reviewed and understood this information prior to authorizing</p>
+<p>installation.</p>
+<br>
+<p>6.5 Products Liability — Seller Defense Reservation</p>
+<br>
+<p>The Device incorporates components manufactured by third parties.</p>
+<p>TexTrack, LLC is a reseller and service provider. TexTrack, LLC</p>
+<p>expressly reserves all rights under the Texas innocent seller defense</p>
+<p>(Tex. Civ. Prac. &amp; Rem. Code §82.003) and all equivalent defenses</p>
+<p>available under applicable law, and all rights of contribution and</p>
+<p>indemnification against third-party component manufacturers.</p>
+<br>
+<p>6.6 Consent to Vehicle Modification</p>
+<br>
+<p>Customer expressly consents to Vehicle modifications incident to</p>
+<p>installation, including connection of power wiring to the fuse box,</p>
+<p>routing of wiring through interior panels, and mounting of the Device</p>
+<p>enclosure. Customer represents these modifications are not prohibited by</p>
+<p>any applicable lease, financing agreement, or vehicle warranty</p>
+<p>condition.</p>
+<br>
+<p>6.7 Device Tampering</p>
+<br>
+<p>Tampering with or removing the Device does not relieve Customer of</p>
+<p>payment obligations, including any applicable ETF.</p>
+<br>
+<p>6.8 Insurance Recommendation</p>
+<br>
+<p>TexTrack, LLC strongly recommends Customer maintain comprehensive</p>
+<p>vehicle insurance covering aftermarket electronic devices and verify</p>
+<p>with their insurer that the Device installation does not affect their</p>
+<p>coverage.</p>
+<br>
+<p>7. Service Availability and Limitations</p>
+<br>
+<p>7.1 No Uptime Guarantee</p>
+<br>
+<p>THE SERVICE IS PROVIDED "AS AVAILABLE." TEXTRACK, LLC MAKES NO WARRANTY</p>
+<p>THAT THE SERVICE WILL BE AVAILABLE AT ANY TIME OR OPERATE WITHOUT</p>
+<p>INTERRUPTION. THE SERVICE DEPENDS ON THIRD-PARTY INFRASTRUCTURE</p>
+<p>INCLUDING CELLULAR NETWORKS, CLOUD HOSTING, AND GPS SATELLITES.</p>
+<br>
+<p>7.2 GPS and Cellular Limitations</p>
+<br>
+<p>GPS and cellular performance are subject to environmental variables</p>
+<p>including satellite availability, atmospheric conditions, physical</p>
+<p>obstructions, and cellular coverage gaps. These are known service</p>
+<p>characteristics, not force majeure events, and do not constitute breach</p>
+<p>of this Agreement.</p>
+<br>
+<p>7.3 No Theft Recovery Guarantee</p>
+<br>
+<p>TEXTRACK, LLC EXPRESSLY DISCLAIMS ANY REPRESENTATION THAT THE SERVICE</p>
+<p>WILL PREVENT VEHICLE THEFT OR RESULT IN VEHICLE RECOVERY. TEXTRACK, LLC</p>
+<p>DOES NOT CONTACT LAW ENFORCEMENT OR ANY THIRD PARTY ON CUSTOMER'S</p>
+<p>BEHALF.</p>
+<br>
+<p>7.4 Service Modifications</p>
+<br>
+<p>TexTrack, LLC may modify or discontinue any Service feature at any time.</p>
+<p>If the entire Service is permanently discontinued, Customer will receive</p>
+<p>a pro-rated refund of prepaid fees for the unused billing cycle.</p>
+<br>
+<p>7.5 Listen Mode — Legal Limitations and Third-Party Risk</p>
+<br>
+<p>ALL-PARTY CONSENT WARNING: Audio interception laws vary significantly by</p>
+<p>state. The following states require ALL parties to consent to audio</p>
+<p>monitoring (not just the Vehicle owner): California, Connecticut,</p>
+<p>Florida, Illinois, Maryland, Massachusetts, Michigan, Montana, Nevada,</p>
+<p>New Hampshire, Oregon, Pennsylvania, and Washington. Customer is solely</p>
+<p>responsible for determining and complying with the consent requirements</p>
+<p>of all applicable jurisdictions. TexTrack, LLC makes no representation</p>
+<p>regarding the legality of Listen Mode use in any particular</p>
+<p>jurisdiction.</p>
+<br>
+<p>SOLE LEGAL RESPONSIBILITY: Customer bears sole and exclusive legal</p>
+<p>responsibility for compliance with all audio monitoring laws. TexTrack,</p>
+<p>LLC is not a party to any communication captured by Customer through</p>
+<p>Listen Mode.</p>
+<br>
+<p>NO RECORDING BY TEXTRACK: TexTrack, LLC does not record, store,</p>
+<p>transmit, or access audio captured during Listen Mode sessions. Audio is</p>
+<p>transmitted in real time via encrypted connection solely between the</p>
+<p>Device and Customer's authorized control panel.</p>
+<br>
+<p>8. Data Collection, Privacy, Security, and Your Privacy Rights</p>
+<br>
+<p>8.1 Data Collected</p>
+<br>
+<p>TexTrack, LLC collects: (a) Vehicle GPS coordinates, speed, heading, and</p>
+<p>movement status; (b) Device power and battery status; (c) Customer</p>
+<p>account data (name, email, phone, payment information, VIN); and (d)</p>
+<p>real-time Listen Mode audio (streamed only; not stored). TexTrack, LLC</p>
+<p>does not sell Customer personal information to third parties for</p>
+<p>commercial purposes.</p>
+<br>
+<p>8.2 Data Use and Sharing</p>
+<br>
+<p>Location data is accessible only through Customer's PIN-protected</p>
+<p>control panel. TexTrack, LLC may share Customer data with: (a) Stripe,</p>
+<p>Inc. for payment processing; (b) Render Services, Inc. for server</p>
+<p>hosting; (c) Turso for database hosting; and (d) law enforcement as</p>
+<p>required by law. These sharing relationships do not constitute a "sale"</p>
+<p>of personal information under applicable privacy law.</p>
+<br>
+<p>8.3 Contact Information for Legal Notices and Privacy Requests</p>
+<br>
+<p>Legal Notices and Arbitration Opt-Out: TexTrack, LLC · Houston, Texas ·</p>
+<p>legal@textrack.com</p>
+<br>
+<p>Privacy Rights Requests: privacy@textrack.com</p>
+<br>
+<p>These dedicated contacts are provided to ensure prompt handling of legal</p>
+<p>notices, arbitration opt-out requests, and privacy rights requests.</p>
+<p>Notices sent to these addresses are deemed received upon delivery</p>
+<p>confirmation.</p>
+<br>
+<p>8.4 Your Privacy Rights (Applicable Nationwide)</p>
+<br>
+<p>Depending on the state in which you reside, you may have the following</p>
+<p>rights regarding your personal information, to the extent required by</p>
+<p>applicable state law:</p>
+<br>
+<ul>
+<li>Right to Know/Access: The right to know what personal information we</li>
+</ul>
+<p>collect about you and to access that information</p>
+<br>
+<ul>
+<li>Right to Correct: The right to correct inaccurate personal</li>
+</ul>
+<p>information we hold about you</p>
+<br>
+<ul>
+<li>Right to Delete: The right to request deletion of your personal</li>
+</ul>
+<p>information, subject to our legal retention obligations</p>
+<br>
+<ul>
+<li>Right to Opt-Out: The right to opt out of the sale or sharing of</li>
+</ul>
+<p>your personal information for cross-context behavioral advertising</p>
+<p>(note: we do not sell or share your information for advertising</p>
+<p>purposes)</p>
+<br>
+<ul>
+<li>Right to Non-Discrimination: The right not to receive discriminatory</li>
+</ul>
+<p>treatment for exercising your privacy rights</p>
+<br>
+<p>These rights apply to residents of California (CCPA/CPRA), Colorado</p>
+<p>(CPA), Connecticut (CTDPA), Virginia (VCDPA), Texas (TDPSA), and other</p>
+<p>states with applicable privacy laws, to the extent required by such</p>
+<p>laws. To exercise any of these rights, contact TexTrack, LLC at the</p>
+<p>contact information provided at time of purchase. TexTrack, LLC will</p>
+<p>respond within the timeframe required by applicable law (generally 30-45</p>
+<p>days).</p>
+<br>
+<p>California residents: For purposes of the CCPA, TexTrack, LLC does not</p>
+<p>"sell" or "share" personal information as those terms are defined under</p>
+<p>California law. This Agreement serves as TexTrack, LLC's notice at</p>
+<p>collection as required by Cal. Civ. Code §1798.100(b).</p>
+<br>
+<p>8.5 Audio Data</p>
+<br>
+<p>Listen Mode audio is streamed in real time and is not recorded, stored,</p>
+<p>or retained by TexTrack, LLC.</p>
+<br>
+<p>8.6 Law Enforcement Disclosure</p>
+<br>
+<p>TexTrack, LLC will disclose Customer account information (name, address,</p>
+<p>billing records, and IP access logs) to law enforcement in response to</p>
+<p>valid legal process or, without legal process, when TexTrack, LLC</p>
+<p>reasonably believes disclosure is necessary to prevent imminent serious</p>
+<p>harm to a person or property. TexTrack, LLC will disclose Vehicle</p>
+<p>location history and GPS data only in response to valid legal process</p>
+<p>(subpoena, court order, or search warrant), consistent with applicable</p>
+<p>law including the Stored Communications Act (18 U.S.C. §2703) and the</p>
+<p>Fourth Amendment principles recognized in Carpenter v. United States,</p>
+<p>138 S.Ct. 2206 (2018). Customer expressly agrees that TexTrack, LLC's</p>
+<p>good-faith compliance with valid legal process, including disclosure of</p>
+<p>Customer data in response to a subpoena, court order, or warrant, shall</p>
+<p>not constitute a breach of this Agreement or a violation of Customer's</p>
+<p>privacy rights hereunder. Customer waives any claim against TexTrack,</p>
+<p>LLC arising from TexTrack, LLC's good-faith compliance with legal</p>
+<p>process or its reasonable efforts to prevent imminent harm.</p>
+<br>
+<p>8.7 Data Security</p>
+<br>
+<p>TexTrack, LLC implements commercially reasonable security measures</p>
+<p>including encryption in transit and at rest. No security system is</p>
+<p>impenetrable. TexTrack, LLC's liability for data security incidents is</p>
+<p>limited as provided in Section 10.</p>
+<br>
+<p>8.8 Data Breach Notification</p>
+<br>
+<p>In the event of a security breach, TexTrack, LLC will notify affected</p>
+<p>Customers in accordance with applicable federal and state breach</p>
+<p>notification laws, including Texas Business and Commerce Code §521.053</p>
+<p>and the breach notification laws of Customer's state of residence.</p>
+<p>Notification will be provided to the email address on file within the</p>
+<p>timeframe required by applicable law.</p>
+<br>
+<p>8.9 Data Retention</p>
+<br>
+<p>Location history is stored on a rolling sixty (60) day basis. Upon</p>
+<p>cancellation, location history is deleted within ninety (90) days.</p>
+<p>Account and payment records may be retained up to seven (7) years.</p>
+<br>
+<p>8.10 Payment Data</p>
+<br>
+<p>TexTrack, LLC does not store credit card numbers. Payment processing is</p>
+<p>handled by Stripe, Inc. (PCI-DSS compliant).</p>
+<br>
+<p>9. Disclaimer of Warranties</p>
+<br>
+<p>WARRANTY DISCLAIMER — READ CAREFULLY: THE SERVICE IS PROVIDED "AS IS."</p>
+<p>TEXTRACK MAKES NO WARRANTIES OF ANY KIND. YOUR MAXIMUM RECOVERY IS</p>
+<p>LIMITED AS SET FORTH IN SECTION 10.</p>
+<br>
+<p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, TEXTRACK, LLC</p>
+<p>EXPRESSLY DISCLAIMS, IN A CONSPICUOUS MANNER AS REQUIRED BY THE UNIFORM</p>
+<p>COMMERCIAL CODE §1-201(B)(10) AS ADOPTED IN ALL APPLICABLE STATES, AND</p>
+<p>TEXAS BUSINESS AND COMMERCE CODE §2.316, ALL WARRANTIES OF ANY KIND,</p>
+<p>WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE, INCLUDING:</p>
+<br>
+<ul>
+<li>THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR</li>
+</ul>
+<p>PURPOSE, TITLE, AND NON-INFRINGEMENT UNDER THE UCC AS ADOPTED IN ALL</p>
+<p>APPLICABLE STATES;</p>
+<br>
+<ul>
+<li>ANY WARRANTY THAT THE SERVICE WILL BE AVAILABLE, UNINTERRUPTED,</li>
+</ul>
+<p>TIMELY, SECURE, OR ERROR-FREE;</p>
+<br>
+<ul>
+<li>ANY WARRANTY REGARDING GPS ACCURACY OR RELIABILITY;</li>
+</ul>
+<br>
+<ul>
+<li>ANY WARRANTY THAT THE SERVICE WILL PREVENT THEFT OR ASSIST IN</li>
+</ul>
+<p>VEHICLE RECOVERY;</p>
+<br>
+<ul>
+<li>ANY WARRANTY REGARDING AUDIO QUALITY DURING LISTEN MODE;</li>
+</ul>
+<br>
+<ul>
+<li>ANY WARRANTY THAT THE DEVICE WILL NOT AFFECT THE VEHICLE'S</li>
+</ul>
+<p>ELECTRICAL SYSTEM, BATTERY, OR MANUFACTURER'S WARRANTY;</p>
+<br>
+<ul>
+<li>ANY WARRANTY ARISING FROM COURSE OF DEALING, COURSE OF PERFORMANCE,</li>
+</ul>
+<p>OR USAGE OF TRADE;</p>
+<br>
+<ul>
+<li>ANY REPRESENTATION MADE BY AN INSTALLER NOT CONTAINED IN THIS</li>
+</ul>
+<p>WRITTEN AGREEMENT. INSTALLERS HAVE NO AUTHORITY TO CREATE WARRANTIES</p>
+<p>ON BEHALF OF TEXTRACK.</p>
+<br>
+<p>Some jurisdictions do not permit exclusion of certain implied</p>
+<p>warranties. In such jurisdictions, disclaimers apply to the maximum</p>
+<p>extent permitted by applicable law.</p>
+<br>
+<p>10. Limitation of Liability</p>
+<br>
+<p>YOUR MAXIMUM FINANCIAL RECOVERY: • SERVICE CLAIMS (GPS, PLATFORM, LISTEN</p>
+<p>MODE, DATA, AVAILABILITY): $100.00 MAXIMUM • HARDWARE/INSTALLATION</p>
+<p>CLAIMS (DEVICE, WIRING, VEHICLE/PROPERTY DAMAGE): $1,000.00 MAXIMUM •</p>
+<p>THESE LIMITS ARE A FUNDAMENTAL PART OF THE PARTIES' AGREEMENT AND</p>
+<p>REFLECT THE LOW MONTHLY PRICE OF THE SERVICE.</p>
+<br>
+<p>10.1 Exclusion of Consequential Damages</p>
+<br>
+<p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, TEXTRACK, LLC SHALL</p>
+<p>NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL,</p>
+<p>EXEMPLARY, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS, REVENUE,</p>
+<p>BUSINESS, GOODWILL, OR DATA, REGARDLESS OF THE FORM OF ACTION OR BASIS</p>
+<p>OF CLAIM.</p>
+<br>
+<p>10.2 Service Claims Cap</p>
+<br>
+<p>FOR ALL SERVICE CLAIMS, TEXTRACK, LLC'S TOTAL CUMULATIVE LIABILITY SHALL</p>
+<p>NOT EXCEED THE LESSER OF: (A) TOTAL MONTHLY FEES PAID BY CUSTOMER IN THE</p>
+<p>THREE (3) MONTHS PRECEDING THE CLAIM; OR (B) ONE HUNDRED DOLLARS</p>
+<p>($100.00).</p>
+<br>
+<p>10.3 Hardware and Installation Claims Cap</p>
+<br>
+<p>FOR ALL HARDWARE CLAIMS, TEXTRACK, LLC'S TOTAL CUMULATIVE LIABILITY</p>
+<p>SHALL NOT EXCEED ONE THOUSAND DOLLARS ($1,000.00) OR THE INSTALLATION</p>
+<p>FEE PAID ($99.00), WHICHEVER IS GREATER. THIS LIMITATION APPLIES</p>
+<p>REGARDLESS OF LEGAL THEORY EXCEPT AS PROVIDED IN SECTION 10.4.</p>
+<br>
+<p>10.4 Personal Injury Carve-Out</p>
+<br>
+<p>The limitations in Sections 10.2 and 10.3 do not apply to: (a) claims</p>
+<p>for personal injury or death caused by TexTrack, LLC's own gross</p>
+<p>negligence or willful misconduct (not an Installer's); or (b) rights</p>
+<p>under applicable state consumer protection statutes that cannot be</p>
+<p>limited by contract. For all other personal injury claims, TexTrack,</p>
+<p>LLC's liability is limited to Customer's proven actual compensatory</p>
+<p>damages, excluding all consequential, punitive, and exemplary damages.</p>
+<br>
+<p>10.5 Essential Purpose</p>
+<br>
+<p>The limitations in this Section 10 are an essential element of the basis</p>
+<p>of the bargain. They apply even if any limited remedy fails of its</p>
+<p>essential purpose. If any limitation is found unenforceable as to a</p>
+<p>particular claim type, it shall be modified to the nearest enforceable</p>
+<p>limitation rather than stricken.</p>
+<br>
+<p>10.6 State Consumer Protection Savings</p>
+<br>
+<p>Nothing herein waives rights under state consumer protection statutes</p>
+<p>that cannot be waived by contract, including rights under the Texas</p>
+<p>Deceptive Trade Practices Act (Tex. Bus. &amp; Com. Code §17.41 et seq.),</p>
+<p>California Consumer Legal Remedies Act (Cal. Civ. Code §1750 et seq.),</p>
+<p>New York General Business Law §349, or equivalent statutes in Customer's</p>
+<p>state of residence. These limitations apply to the maximum extent</p>
+<p>permitted by applicable law.</p>
+<br>
+<p>10.7 Public Injunctive Relief (McGill Rule Compliance)</p>
+<br>
+<p>Nothing in this Agreement shall be construed to prevent Customer from</p>
+<p>seeking public injunctive relief under applicable state consumer</p>
+<p>protection statutes, including California's Consumers Legal Remedies Act</p>
+<p>(Cal. Civ. Code §1750 et seq.) and Unfair Competition Law (Cal. Bus. &amp;</p>
+<p>Prof. Code §17200 et seq.), to the extent such relief is available and</p>
+<p>cannot be waived by contract. See McGill v. Citibank, N.A., 2 Cal.5th</p>
+<p>945 (2017). Any claim for public injunctive relief shall be: (a) severed</p>
+<p>from Customer's individual claims; (b) stayed pending completion of</p>
+<p>arbitration of those individual claims; and (c) resolved in court</p>
+<p>following conclusion of arbitration, consistent with Viking River</p>
+<p>Cruises, Inc. v. Moriana, 596 U.S. 639 (2022), and its progeny. The</p>
+<p>arbitrator shall have no authority to award public injunctive relief.</p>
+<br>
+<p>11. Indemnification</p>
+<br>
+<p>Customer shall indemnify, defend (with counsel acceptable to TexTrack,</p>
+<p>LLC in its reasonable discretion), and hold harmless TexTrack, LLC and</p>
+<p>its members, managers, officers, employees, contractors, successors,</p>
+<p>assigns, and insurers from all claims, damages, losses, liabilities,</p>
+<p>fines, penalties, costs, and expenses, including reasonable attorneys'</p>
+<p>fees, to the fullest extent permitted by applicable law in the</p>
+<p>jurisdiction where the claim arises, arising out of or related to:</p>
+<br>
+<ul>
+<li>Customer's misuse, illegal use, or unauthorized use of the Service;</li>
+</ul>
+<br>
+<ul>
+<li>Customer's breach of any representation, warranty, or obligation</li>
+</ul>
+<p>under this Agreement;</p>
+<br>
+<ul>
+<li>Customer's violation of any applicable federal, state, or local law</li>
+</ul>
+<p>in connection with the Service;</p>
+<br>
+<ul>
+<li>Any Third-Party claim arising from Customer's use of the Listen Mode</li>
+</ul>
+<p>feature, including unauthorized audio interception claims;</p>
+<br>
+<ul>
+<li>Any stalking, harassment, domestic abuse, or unlawful surveillance</li>
+</ul>
+<p>claim by any Third Party;</p>
+<br>
+<ul>
+<li>Customer's use of the Service to track any Vehicle or person without</li>
+</ul>
+<p>lawful authority;</p>
+<br>
+<ul>
+<li>Customer's misrepresentation of Vehicle ownership or authorization</li>
+</ul>
+<p>under Section 4.</p>
+<br>
+<p>SCOPE LIMITATION: This indemnification does not apply to claims arising</p>
+<p>solely from TexTrack, LLC's own gross negligence or willful misconduct.</p>
+<p>To the extent applicable law limits indemnification for an indemnitee's</p>
+<p>own negligence (including California Civil Code §2782 and New York</p>
+<p>General Obligations Law §5-322.1 and their equivalents), this</p>
+<p>indemnification applies to the fullest extent permitted by such</p>
+<p>applicable law.</p>
+<br>
+<p>TexTrack, LLC reserves the right to assume exclusive defense of any</p>
+<p>indemnifiable matter at Customer's expense, in which case TexTrack, LLC</p>
+<p>shall select and pay for counsel. When Customer is required to provide a</p>
+<p>defense, Customer shall select counsel reasonably acceptable to</p>
+<p>TexTrack, LLC, such acceptance not to be unreasonably withheld or</p>
+<p>delayed. Customer shall not settle any claim without TexTrack, LLC's</p>
+<p>prior written consent, which shall not be unreasonably withheld.</p>
+<br>
+<p>12. Vehicle Transfer and Change of Ownership</p>
+<br>
+<ul>
+<li>Customer must notify TexTrack, LLC in writing within five (5)</li>
+</ul>
+<p>business days of any transfer, sale, or other disposition of the</p>
+<p>Vehicle.</p>
+<br>
+<ul>
+<li>Customer remains liable for all fees until TexTrack, LLC receives</li>
+</ul>
+<p>written notice and the Service is cancelled or transferred.</p>
+<br>
+<ul>
+<li>A new owner may assume the Service subject to TexTrack, LLC's</li>
+</ul>
+<p>approval and execution of a new agreement.</p>
+<br>
+<ul>
+<li>TexTrack, LLC is not responsible for tracking data accumulated after</li>
+</ul>
+<p>an undisclosed transfer.</p>
+<br>
+<p>13. Prohibited Uses</p>
+<br>
+<p>Customer shall not use the Service for:</p>
+<br>
+<ul>
+<li>Tracking any person or vehicle without lawful authority and all</li>
+</ul>
+<p>required consents under applicable federal and state law;</p>
+<br>
+<ul>
+<li>Stalking, harassment, domestic abuse, or any unlawful surveillance,</li>
+</ul>
+<p>including in violation of 18 U.S.C. §2261A (federal stalking</p>
+<p>statute) and applicable state stalking laws;</p>
+<br>
+<ul>
+<li>Any purpose violating any applicable federal, state, or local law or</li>
+</ul>
+<p>regulation;</p>
+<br>
+<ul>
+<li>Commercial sublicensing or resale without written authorization;</li>
+</ul>
+<br>
+<ul>
+<li>Reverse engineering or replication of any TexTrack technology;</li>
+</ul>
+<br>
+<ul>
+<li>Interfering with TexTrack's infrastructure or systems;</li>
+</ul>
+<br>
+<ul>
+<li>Gathering evidence through means that are themselves unlawful under</li>
+</ul>
+<p>applicable law.</p>
+<br>
+<p>Violation constitutes material breach entitling TexTrack, LLC to</p>
+<p>immediate termination without refund.</p>
+<br>
+<p>14. Termination</p>
+<br>
+<p>14.1 Termination by Customer After Minimum Period</p>
+<br>
+<p>After the Minimum Period, Customer may cancel via written notice.</p>
+<p>Termination is effective at end of the then-current billing cycle. No</p>
+<p>partial-month refunds.</p>
+<br>
+<p>14.2 Termination by TexTrack, LLC for Cause</p>
+<br>
+<p>TexTrack, LLC may immediately terminate without refund upon: Customer's</p>
+<p>material breach; fraudulent, abusive, or illegal conduct; failed payment</p>
+<p>after all retries; or TexTrack, LLC's reasonable determination that</p>
+<p>continued service creates legal or safety risk.</p>
+<br>
+<p>14.3 Termination by TexTrack, LLC Without Cause</p>
+<br>
+<p>TexTrack, LLC may terminate without cause upon thirty (30) days' written</p>
+<p>notice. Customer will receive a pro-rated refund of prepaid fees for the</p>
+<p>unused billing cycle portion.</p>
+<br>
+<p>14.4 Effect of Termination; Survival</p>
+<br>
+<p>Upon termination: Service access ceases; data deletion begins; all</p>
+<p>accrued payment obligations survive and are immediately due. Sections 4,</p>
+<p>5, 8, 9, 10, 11, 15, and 16 survive termination indefinitely.</p>
+<br>
+<p>15. Dispute Resolution and Arbitration Agreement</p>
+<br>
+<p>ARBITRATION NOTICE: THIS SECTION REQUIRES BINDING ARBITRATION OF ALL</p>
+<p>DISPUTES AND WAIVES YOUR RIGHT TO A JURY TRIAL AND CLASS LITIGATION. THE</p>
+<p>FEDERAL ARBITRATION ACT (9 U.S.C. §1 ET SEQ.) GOVERNS THIS ARBITRATION</p>
+<p>AGREEMENT AND PREEMPTS STATE LAW. YOU MAY OPT OUT WITHIN 30 DAYS — SEE</p>
+<p>SECTION 15.3.</p>
+<br>
+<p>15.1 Mandatory Informal Resolution</p>
+<br>
+<p>Before initiating arbitration, the Claimant must provide thirty (30)</p>
+<p>days' written notice to the other party describing the claim in</p>
+<p>reasonable detail, the specific relief sought, and the legal basis for</p>
+<p>the claim ("Dispute Notice"). TexTrack, LLC shall acknowledge receipt of</p>
+<p>a Dispute Notice within five (5) business days and shall designate a</p>
+<p>representative to engage in good-faith negotiation within ten (10)</p>
+<p>business days of receipt. The parties shall negotiate in good faith for</p>
+<p>the remainder of the thirty (30) day period. Either party may initiate</p>
+<p>arbitration upon expiration of the thirty (30) day period, regardless of</p>
+<p>whether negotiations are ongoing or concluded. Failure to comply with</p>
+<p>this provision does not deprive an arbitrator of jurisdiction but may be</p>
+<p>considered in any award of fees. This requirement does not apply to</p>
+<p>claims for emergency injunctive relief.</p>
+<br>
+<p>15.2 Binding Arbitration; FAA Governance; Delegation Clause</p>
+<br>
+<p>EXCEPT AS PROVIDED IN SECTION 15.9, ALL DISPUTES SHALL BE RESOLVED BY</p>
+<p>FINAL AND BINDING ARBITRATION under the Federal Arbitration Act (9</p>
+<p>U.S.C. §1 et seq.), which governs the interpretation, enforcement, and</p>
+<p>all proceedings under this arbitration agreement and preempts any</p>
+<p>contrary state law.</p>
+<br>
+<p>Arbitration shall be administered by the AAA under its Consumer</p>
+<p>Arbitration Rules in effect at the time arbitration is initiated, which</p>
+<p>rules are incorporated herein by reference. The parties agree that</p>
+<p>incorporation of the AAA Consumer Arbitration Rules constitutes a clear</p>
+<p>and unmistakable agreement to delegate to the arbitrator the exclusive</p>
+<p>authority to resolve all threshold questions of arbitrability, including</p>
+<p>questions regarding the existence, validity, enforceability, scope, and</p>
+<p>interpretation of this arbitration agreement and any claim that this</p>
+<p>entire Agreement or any part thereof is void or voidable. See</p>
+<p>Rent-A-Center, West, Inc. v. Jackson, 561 U.S. 63 (2010); Henry Schein,</p>
+<p>Inc. v. Archer &amp; White Sales, Inc., 139 S.Ct. 524 (2019).</p>
+<br>
+<p>This arbitration agreement is severable from the remainder of this</p>
+<p>Agreement and shall remain valid and enforceable even if the Agreement</p>
+<p>as a whole is found void or voidable. Any challenge to the Agreement as</p>
+<p>a whole (as opposed to a challenge directed specifically at the</p>
+<p>arbitration agreement itself) shall be decided by the arbitrator, not a</p>
+<p>court. See Prima Paint Corp. v. Flood &amp; Conklin Mfg. Co., 388 U.S. 395</p>
+<p>(1967); Buckeye Check Cashing, Inc. v. Cardegna, 546 U.S. 440 (2006).</p>
+<br>
+<p>Arbitration shall be conducted by a single arbitrator applying Texas</p>
+<p>substantive law for contractual claims and applicable federal or state</p>
+<p>law for statutory claims. The arbitrator's award shall be in writing</p>
+<p>stating essential findings. Judgment on the award may be entered in any</p>
+<p>court of competent jurisdiction as provided by 9 U.S.C. §9.</p>
+<br>
+<p>15.3 Opt-Out Right</p>
+<br>
+<p>Customer may opt out of this arbitration agreement by sending written</p>
+<p>notice to TexTrack, LLC within thirty (30) days of first use of the</p>
+<p>Service. Opt-out notice must: (a) be sent via email to</p>
+<p>legal@textrack.com OR via USPS certified mail to TexTrack, LLC's</p>
+<p>principal address in Houston, Texas; (b) state Customer's full name,</p>
+<p>address, Vehicle VIN, and email address on file; and (c) contain the</p>
+<p>following statement: "I elect to opt out of the arbitration agreement in</p>
+<p>my TexTrack Terms of Service." Opting out does not affect any other term</p>
+<p>of this Agreement. If Customer opts out, disputes will be resolved in</p>
+<p>Harris County, Texas courts as provided in Section 15.6. TexTrack, LLC</p>
+<p>will confirm receipt of timely opt-out notices in writing.</p>
+<br>
+<p>15.4 Arbitration Costs</p>
+<br>
+<p>Each party bears its own attorneys' fees and costs in arbitration except</p>
+<p>as provided by applicable AAA Consumer Arbitration Rules and applicable</p>
+<p>law. Customer shall pay the consumer filing fee required by AAA's</p>
+<p>Consumer Arbitration Rules in effect at the time arbitration is</p>
+<p>initiated; current fee schedules are published at adr.org. TexTrack, LLC</p>
+<p>shall pay all other AAA administrative and arbitrator fees. The</p>
+<p>arbitrator has authority to award fees and costs against any party who</p>
+<p>brings a claim or defense that is frivolous, brought in bad faith, or</p>
+<p>for an improper purpose.</p>
+<br>
+<p>15.5 Arbitration Location and Procedure</p>
+<br>
+<p>Arbitration shall be seated in Harris County, Texas. For claims of</p>
+<p>$10,000 or less, Customer may elect to conduct arbitration by telephone,</p>
+<p>video conference, or written submission. For claims exceeding $10,000,</p>
+<p>arbitration shall be conducted in person in Harris County unless the</p>
+<p>parties mutually agree otherwise.</p>
+<br>
+<p>15.6 Governing Law; Venue for Non-Arbitrated Claims</p>
+<br>
+<p>Texas law governs contractual disputes. For Disputes not subject to</p>
+<p>arbitration (including following a valid opt-out, emergency injunctive</p>
+<p>relief, and small claims court matters), the exclusive venue is the</p>
+<p>state district courts of Harris County, Texas, or the U.S. District</p>
+<p>Court for the Southern District of Texas, Houston Division. Each party</p>
+<p>irrevocably consents to personal jurisdiction. Forum selection clauses</p>
+<p>in this Agreement shall be enforced pursuant to Atlantic Marine</p>
+<p>Construction Co. v. U.S. District Court, 571 U.S. 49 (2013).</p>
+<br>
+<p>15.7 Class Action and Representative Action Waiver</p>
+<br>
+<p>CUSTOMER AGREES THAT ALL DISPUTES SHALL BE RESOLVED ONLY ON AN</p>
+<p>INDIVIDUAL BASIS. CUSTOMER EXPRESSLY WAIVES THE RIGHT TO FILE OR</p>
+<p>PARTICIPATE IN ANY CLASS ACTION LAWSUIT, CLASS-WIDE ARBITRATION, PRIVATE</p>
+<p>ATTORNEY GENERAL ACTION (EXCEPT AS PROVIDED IN SECTION 10.7 FOR PUBLIC</p>
+<p>INJUNCTIVE RELIEF), OR REPRESENTATIVE PROCEEDING OF ANY KIND. THE</p>
+<p>ARBITRATOR SHALL HAVE NO AUTHORITY TO CONSOLIDATE CLAIMS OR PRESIDE OVER</p>
+<p>ANY FORM OF CLASS PROCEEDING. THIS CLASS ACTION WAIVER IS ENFORCEABLE</p>
+<p>INDEPENDENTLY OF THE ARBITRATION CLAUSE AND IS SPECIFICALLY ENFORCEABLE</p>
+<p>UNDER EPIC SYSTEMS CORP. V. LEWIS, 584 U.S. 497 (2018) AND AT&amp;T MOBILITY</p>
+<p>LLC V. CONCEPCION, 563 U.S. 333 (2011). THIS WAIVER APPLIES TO THE</p>
+<p>FULLEST EXTENT PERMITTED BY APPLICABLE LAW. TO THE EXTENT ANY FEDERAL</p>
+<p>STATUTE EXPRESSLY PRESERVES THE RIGHT TO BRING CLAIMS ON A CLASS BASIS</p>
+<p>AND SUCH RIGHT CANNOT BE WAIVED, THIS WAIVER DOES NOT APPLY TO SUCH</p>
+<p>CLAIMS; HOWEVER, SUCH CLAIMS SHALL BE ARBITRATED ON AN INDIVIDUAL BASIS</p>
+<p>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW.</p>
+<br>
+<p>15.8 Shortened Limitations Period</p>
+<br>
+<p>All claims must be filed within one (1) year after the earlier of: (a)</p>
+<p>the date of the event giving rise to the claim; (b) the date Customer</p>
+<p>first discovered the claim; or (c) the date on which Customer reasonably</p>
+<p>should have discovered the claim through the exercise of reasonable</p>
+<p>diligence, which for purposes of this Agreement means no later than the</p>
+<p>earlier of: (i) the date Customer received any written communication</p>
+<p>from TexTrack, LLC referencing the subject matter of the claim; (ii) the</p>
+<p>date Customer or any person acting on Customer's behalf first accessed</p>
+<p>Account records relevant to the claim; or (iii) thirty (30) days</p>
+<p>following the termination or cancellation of Customer's Service. Claims</p>
+<p>not timely filed within this period are permanently barred.</p>
+<p>Notwithstanding the foregoing, to the extent any applicable statute of</p>
+<p>limitations cannot be shortened by contract — including the Texas</p>
+<p>Deceptive Trade Practices Act (2-year mandatory period, Tex. Bus. &amp; Com.</p>
+<p>Code §17.565), California Consumer Legal Remedies Act (3-year period,</p>
+<p>Cal. Civ. Code §1783), and equivalent state statutes — the applicable</p>
+<p>statutory period shall govern for such claims only and solely to the</p>
+<p>extent required by applicable law.</p>
+<br>
+<p>15.9 Exceptions to Arbitration</p>
+<br>
+<p>The following claims are not subject to mandatory arbitration: (a)</p>
+<p>claims for emergency injunctive or temporary restraining order relief to</p>
+<p>prevent irreparable harm, which may be brought in court without waiving</p>
+<p>the right to arbitrate the underlying dispute; (b) claims within the</p>
+<p>jurisdiction of a small claims court in Customer's state of residence;</p>
+<p>and (c) claims for public injunctive relief under applicable state</p>
+<p>consumer protection statutes to the extent such claims cannot be</p>
+<p>compelled to arbitration, provided that such public injunctive relief</p>
+<p>claims shall be severed and stayed pending completion of arbitration of</p>
+<p>Customer's individual claims, consistent with Viking River Cruises, Inc.</p>
+<p>v. Moriana, 596 U.S. 639 (2022).</p>
+<br>
+<p>15.10 Attorneys' Fees in Court Proceedings</p>
+<br>
+<p>If TexTrack, LLC is the prevailing party in any court proceeding,</p>
+<p>TexTrack, LLC is entitled to recover reasonable attorneys' fees and</p>
+<p>costs to the extent permitted by applicable law. Customer may recover</p>
+<p>attorneys' fees only as expressly permitted by applicable statute.</p>
+<br>
+<p>16. General Provisions</p>
+<br>
+<p>16.1 Entire Agreement</p>
+<br>
+<p>This Agreement constitutes the entire agreement between the parties and</p>
+<p>supersedes all prior agreements, representations, and understandings. No</p>
+<p>prior drafts shall be used in interpretation.</p>
+<br>
+<p>16.2 Severability</p>
+<br>
+<p>If any provision is found invalid or unenforceable, it shall be modified</p>
+<p>to the minimum extent necessary to make it enforceable. Remaining</p>
+<p>provisions continue in full force. If any liability limitation is found</p>
+<p>unenforceable, it shall be modified to the nearest enforceable</p>
+<p>limitation. If the class action waiver is found unenforceable in a</p>
+<p>particular context, that context shall be severed and resolved in court</p>
+<p>individually, and the remainder of the arbitration clause shall continue</p>
+<p>in full effect.</p>
+<br>
+<p>16.3 No Waiver</p>
+<br>
+<p>No failure or delay by TexTrack, LLC in exercising any right constitutes</p>
+<p>a waiver. No waiver is effective unless in writing signed by an</p>
+<p>authorized representative of TexTrack, LLC.</p>
+<br>
+<p>16.4 Assignment</p>
+<br>
+<p>Customer may not assign this Agreement without TexTrack, LLC's prior</p>
+<p>written consent. TexTrack, LLC may freely assign this Agreement,</p>
+<p>including in connection with any merger, acquisition, or asset sale.</p>
+<br>
+<p>16.5 Force Majeure</p>
+<br>
+<p>TexTrack, LLC is not liable for failure or delay caused by circumstances</p>
+<p>beyond its reasonable control, including acts of God, natural disasters,</p>
+<p>pandemic, governmental action or inaction, labor disputes not involving</p>
+<p>TexTrack, LLC's employees, or widespread internet infrastructure</p>
+<p>failures caused by events beyond any single provider's control. Routine</p>
+<p>cellular network performance variations and GPS limitations are known</p>
+<p>service characteristics addressed in Section 7.2 and are not force</p>
+<p>majeure events.</p>
+<br>
+<p>16.6 Notices</p>
+<br>
+<p>Notices from Customer to TexTrack, LLC must be sent to</p>
+<p>legal@textrack.com or such updated address as TexTrack, LLC may publish</p>
+<p>with thirty (30) days' advance notice. TexTrack, LLC's current legal</p>
+<p>notice address is always available at TexTrack, LLC's website and on</p>
+<p>Customer's account page. Notices from TexTrack, LLC to Customer will be</p>
+<p>sent to the email address on file. Notices are effective upon: (a)</p>
+<p>confirmed delivery for email; (b) the third day following deposit in</p>
+<p>U.S. mail for postal notices. Notices sent to an outdated address in</p>
+<p>good faith prior to receiving notice of an address change shall be</p>
+<p>deemed effective.</p>
+<br>
+<p>16.7 No Third-Party Beneficiaries</p>
+<br>
+<p>This Agreement is for the sole benefit of the parties. Nothing herein</p>
+<p>creates any right in or obligation to any Third Party, including vehicle</p>
+<p>occupants, passengers, or any person whose audio may be captured by the</p>
+<p>Listen Mode feature.</p>
+<br>
+<p>16.8 Independent Contractors</p>
+<br>
+<p>The parties are independent contracting parties. Nothing herein creates</p>
+<p>employment, agency, partnership, joint venture, or franchise.</p>
+<br>
+<p>16.9 Anti-Drafter Rule Waiver</p>
+<br>
+<p>This Agreement has been reviewed by the parties. No ambiguity shall be</p>
+<p>construed against either party as drafter.</p>
+<br>
+<p>16.10 Headings</p>
+<br>
+<p>Section headings are for convenience only and shall not affect</p>
+<p>interpretation.</p>
+<br>
+<p>16.11 Counterparts; Electronic Execution</p>
+<br>
+<p>This Agreement may be executed electronically. Electronic acceptance is</p>
+<p>valid and enforceable under the federal E-SIGN Act (15 U.S.C. §7001 et</p>
+<p>seq.) and applicable state UETA provisions in all fifty U.S. states and</p>
+<p>territories. Electronic signatures have the same legal effect as</p>
+<p>handwritten signatures.</p>
+<br>
+<p>16.12 Compliance with Law</p>
+<br>
+<p>Each party agrees to comply with all applicable federal, state, and</p>
+<p>local laws and regulations in connection with this Agreement and the</p>
+<p>Service. Nothing in this Agreement requires or authorizes either party</p>
+<p>to violate any applicable law.</p>
+<br>
+<p>17. Release of Liability, Acknowledgment, and Agreement</p>
+<br>
+<p>RELEASE: In consideration of TexTrack, LLC's provision of the Service at</p>
+<p>the rates herein, Customer hereby releases, acquits, and forever</p>
+<p>discharges TexTrack, LLC and its members, managers, officers, employees,</p>
+<p>contractors, insurers, successors, and assigns from all claims, demands,</p>
+<p>causes of action, damages, losses, and liabilities of every nature,</p>
+<p>known or unknown, suspected or unsuspected, that are inconsistent with</p>
+<p>the limitations and disclaimers set forth in this Agreement, to the</p>
+<p>fullest extent permitted by applicable law in all applicable</p>
+<p>jurisdictions. Customer expressly waives the protection of California</p>
+<p>Civil Code Section 1542, which provides: "A general release does not</p>
+<p>extend to claims that the creditor or releasing party does not know or</p>
+<p>suspect to exist in his or her favor at the time of executing the</p>
+<p>release and that, if known by him or her, would have materially affected</p>
+<p>his or her settlement with the debtor or releasing party." Customer also</p>
+<p>expressly waives any equivalent provision in any other state or</p>
+<p>jurisdiction. Customer acknowledges that this release extends to claims</p>
+<p>Customer does not currently know or suspect to exist, and that Customer</p>
+<p>has had an opportunity to consult with legal counsel before executing</p>
+<p>this release.</p>
+<br>
+<p>BY COMPLETING PAYMENT, CHECKING AN ACCEPTANCE BOX, OR USING THE SERVICE,</p>
+<p>CUSTOMER SPECIFICALLY ACKNOWLEDGES AND AGREES TO ALL OF THE FOLLOWING:</p>
+<p>(1) ARBITRATION (SECTION 15): I WAIVE MY RIGHT TO A JURY TRIAL. ALL</p>
+<p>DISPUTES WILL BE RESOLVED BY BINDING ARBITRATION UNDER THE FEDERAL</p>
+<p>ARBITRATION ACT UNLESS I OPT OUT WITHIN 30 DAYS OF FIRST USE. (2) CLASS</p>
+<p>ACTION WAIVER (SECTION 15.7): I WAIVE MY RIGHT TO PARTICIPATE IN CLASS</p>
+<p>ACTION LITIGATION NATIONWIDE. (3) LIABILITY CAPS (SECTION 10): MY</p>
+<p>MAXIMUM RECOVERY IS $100 FOR SERVICE CLAIMS AND $1,000 FOR</p>
+<p>HARDWARE/INSTALLATION CLAIMS. (4) LIMITATIONS PERIOD (SECTION 15.8): ALL</p>
+<p>CLAIMS MUST BE FILED WITHIN ONE YEAR EXCEPT AS REQUIRED BY APPLICABLE</p>
+<p>STATUTE. (5) ELECTRICAL RISK (SECTION 6.4): I HAVE READ AND UNDERSTOOD</p>
+<p>THE ELECTRICAL SAFETY WARNING. (6) AUDIO MONITORING (SECTION 7.5): I</p>
+<p>HAVE READ THE AUDIO MONITORING WARNING. I UNDERSTAND THAT ALL-PARTY</p>
+<p>CONSENT MAY BE REQUIRED IN MY STATE. I AM SOLELY RESPONSIBLE FOR</p>
+<p>COMPLIANCE WITH APPLICABLE AUDIO MONITORING LAWS. (7) VEHICLE OWNERSHIP</p>
+<p>(SECTION 4): I AM THE LEGAL OWNER OF THE VEHICLE OR HAVE WRITTEN</p>
+<p>AUTHORIZATION FROM THE LEGAL OWNER. (8) INDEMNIFICATION (SECTION 11): I</p>
+<p>WILL INDEMNIFY TEXTRACK FOR CLAIMS ARISING FROM MY MISUSE OF THE SERVICE</p>
+<p>TO THE FULLEST EXTENT PERMITTED BY APPLICABLE LAW. (9) NATIONWIDE</p>
+<p>APPLICATION (SECTION 2): THIS AGREEMENT APPLIES IN ALL U.S. STATES AND</p>
+<p>TERRITORIES AND IS GOVERNED BY THE FEDERAL ARBITRATION ACT FOR ALL</p>
+<p>ARBITRATION MATTERS. (10) LIABILITY LIMITS REASONABLENESS: I ACKNOWLEDGE</p>
+<p>THAT THE LIABILITY LIMITS IN SECTION 10 ($100 FOR SERVICE CLAIMS, $1,000</p>
+<p>FOR HARDWARE/INSTALLATION CLAIMS) ARE COMMERCIALLY REASONABLE GIVEN THE</p>
+<p>$22/MONTH PRICE OF THE SERVICE AND REPRESENT A FAIR ALLOCATION OF RISK</p>
+<p>BETWEEN THE PARTIES. I AM NOT WAIVING ANY RIGHT THAT CANNOT BE WAIVED</p>
+<p>UNDER APPLICABLE LAW. IF I DO NOT AGREE TO ALL OF THE ABOVE, I WILL NOT</p>
+<p>PURCHASE OR USE THE SERVICE.</p>
+<br>
+<p>Customer Signature: ____________________________________________</p>
+<br>
+<p>Printed Full Legal Name: ______________________________________</p>
+<br>
+<p>Date: ______________________ Vehicle VIN: ______________________</p>
+<br>
+<p>State of Residence: __________________ Vehicle Year/Make/Model:</p>
+<p>__________________</p>
+<br>
+<p>License Plate + State: ____________________________________</p>
+<br>
+<p>I acknowledge the Installer is an independent contractor, not an</p>
+<p>employee or agent of TexTrack, LLC: ☐ YES</p>
+<br>
+<p>I acknowledge I have read and agree to the Arbitration Agreement in</p>
+<p>Section 15, including the waiver of jury trial and class action rights:</p>
+<p>☐ YES</p>
+<br>
+<p>TexTrack, LLC · Vehicle Security Service · Houston, Texas · Applicable</p>
+<p>in All U.S. States</p>
+<br>
+<p>Version dated April 3, 2026 · Supersedes all prior versions</p>
+<br>
+    </div>
+    <div class="scroll-indicator" id="scrollIndicator">▼ SCROLL TO READ FULL AGREEMENT</div>
+  </div>
+
+  <div id="sigSection" style="opacity:0.3;pointer-events:none;transition:opacity 0.4s;">
+
+    <div class="checks" id="checkList">
+      <div class="check-item">
+        <input type="checkbox" id="chk1" />
+        <label for="chk1"><strong>Arbitration & Jury Trial Waiver (Section 15):</strong> I waive my right to a jury trial. All disputes will be resolved by binding arbitration under the Federal Arbitration Act unless I opt out within 30 days.</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="chk2" />
+        <label for="chk2"><strong>Class Action Waiver (Section 15.7):</strong> I waive my right to participate in any class action lawsuit nationwide.</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="chk3" />
+        <label for="chk3"><strong>Liability Limits (Section 10):</strong> My maximum recovery is $100 for service claims and $1,000 for hardware/installation claims. I acknowledge these limits are commercially reasonable.</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="chk4" />
+        <label for="chk4"><strong>Audio Monitoring (Section 7.5):</strong> I have read the audio monitoring warning. I understand all-party consent may be required in my state. I am solely responsible for compliance with applicable audio monitoring laws.</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="chk5" />
+        <label for="chk5"><strong>Electrical Risk (Section 6.4):</strong> I have read and understood the electrical safety warning and voluntarily assume the described electrical risks.</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="chk6" />
+        <label for="chk6"><strong>Vehicle Ownership (Section 4):</strong> I am the legal owner of the vehicle I am registering, or I have written authorization from the legal owner.</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="chk7" />
+        <label for="chk7"><strong>Installer Independence (Section 6.2):</strong> I acknowledge the installer is an independent contractor and not an employee or agent of TexTrack, LLC.</label>
+      </div>
+      <div class="check-item">
+        <input type="checkbox" id="chk8" />
+        <label for="chk8"><strong>I have read and agree to the complete TexTrack Terms of Service, Service Agreement, and Release of Liability above.</strong></label>
+      </div>
+    </div>
+
+    <div class="sig-field">
+      <label>Type Your Full Legal Name to Sign *</label>
+      <input type="text" class="sig-input" id="sigName"
+        placeholder="Type your full legal name" autocomplete="name" />
+      <div class="sig-note" id="sigNote">Your typed name constitutes a legally binding electronic signature under the federal E-SIGN Act (15 U.S.C. §7001).</div>
+    </div>
+
+    <div id="sigTimestamp" style="font-family:DM Mono,monospace;font-size:10px;color:var(--muted);margin-bottom:16px;"></div>
+
+    <div class="error-msg" id="err2"></div>
+
+    <div class="price-summary">
+      <div class="screen-title" style="margin-bottom:12px;">What You'll Pay Today</div>
+      <div class="price-row">
+        <span class="price-label">One-time installation fee</span>
+        <span class="price-val">$99.00</span>
+      </div>
+      <div class="price-row">
+        <span class="price-label">First month service</span>
+        <span class="price-val">$22.00</span>
+      </div>
+      <div class="price-row">
+        <span class="price-label">Total due today</span>
+        <span class="price-val">$121.00</span>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:12px;line-height:1.6;">
+        Then $22.00/month, billed automatically. 4-month minimum. Cancel anytime after month 4.
+      </p>
+    </div>
+
+    <button class="btn-primary" id="btnSign" onclick="submitSignature()" disabled>
+      SIGN &amp; PROCEED TO PAYMENT →
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 3: REDIRECTING TO STRIPE           -->
+<!-- ══════════════════════════════════════════ -->
+<div class="screen" id="screen3">
+  <div style="padding-top:40px;text-align:center;">
+    <div class="logo" style="text-align:center;">TexTrack</div>
+    <div style="font-size:48px;margin:20px 0;">🔒</div>
+    <div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--amber);margin-bottom:8px;">
+      Agreement Signed
+    </div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.6;">
+      Your signature has been recorded.<br>Redirecting to secure payment...
+    </div>
+    <div style="font-family:DM Mono,monospace;font-size:11px;color:var(--muted);
+      letter-spacing:2px;animation:pulse 1.5s infinite;">LOADING PAYMENT PAGE...</div>
+  </div>
+</div>
+
+<style>
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+</style>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const SERVER = 'https://tantracker3000-pro.onrender.com';
+// ↑ Change this to your Render URL if different
+
+// installer param = the Stripe Connect account ID (acct_xxxx) baked into each installer's QR code
+// Example QR URL: https://alkdiosp34.github.io/tantracker3000-pro/signup.html?installer=acct_1234&name=Bobby
+// Installer ID comes from URL param — each installer QR code has their ID baked in
+const params = new URLSearchParams(window.location.search);
+const INSTALLER_ID = params.get('installer') || '';
+const INSTALLER_NAME = params.get('name') || '';
+
+// ── STEP 1: VALIDATION ──────────────────────────────────────
+function goToStep2() {
+  const required = ['fullName','email','phone','state','zip','vin','vYear','vMake','vModel','vColor','plate'];
+  const missing = required.filter(id => !document.getElementById(id).value.trim());
+  if (missing.length) {
+    const err = document.getElementById('err1');
+    err.style.display = 'block';
+    err.textContent = 'Please fill in all required fields before continuing.';
+    document.getElementById(missing[0]).focus();
+    return;
+  }
+  // Basic VIN length check
+  const vin = document.getElementById('vin').value.trim();
+  if (vin.length !== 17) {
+    const err = document.getElementById('err1');
+    err.style.display = 'block';
+    err.textContent = 'VIN must be exactly 17 characters.';
+    document.getElementById('vin').focus();
+    return;
+  }
+  document.getElementById('err1').style.display = 'none';
+  showScreen(2);
+  // Set signature timestamp
+  document.getElementById('sigTimestamp').textContent =
+    'Agreement presented: ' + new Date().toLocaleString() + ' (local time)';
+}
+
+// ── TOS SCROLL DETECTION ────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const scroll = document.getElementById('tosScroll');
+  const indicator = document.getElementById('scrollIndicator');
+  const sigSection = document.getElementById('sigSection');
+
+  scroll.addEventListener('scroll', () => {
+    const pct = scroll.scrollTop / (scroll.scrollHeight - scroll.clientHeight);
+    if (pct > 0.92) {
+      indicator.classList.add('hidden');
+      sigSection.style.opacity = '1';
+      sigSection.style.pointerEvents = 'auto';
+    }
+  });
+
+  // Update sign button state when checkboxes change
+  document.querySelectorAll('.check-item input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', updateSignBtn);
+  });
+  document.getElementById('sigName').addEventListener('input', updateSignBtn);
+});
+
+function updateSignBtn() {
+  const allChecked = ['chk1','chk2','chk3','chk4','chk5','chk6','chk7','chk8']
+    .every(id => document.getElementById(id).checked);
+  const sigName = document.getElementById('sigName').value.trim();
+  const fullName = document.getElementById('fullName').value.trim();
+  // Signature name must match (case-insensitive) the full name entered on step 1
+  const nameMatch = sigName.toLowerCase() === fullName.toLowerCase();
+  const btn = document.getElementById('btnSign');
+  btn.disabled = !(allChecked && sigName.length > 3 && nameMatch);
+  if (sigName.length > 3 && !nameMatch) {
+    document.getElementById('sigNote').textContent =
+      'Signature must match the full name entered on the previous screen: "' + fullName + '"';
+    document.getElementById('sigNote').style.color = 'var(--red)';
+  } else {
+    document.getElementById('sigNote').textContent =
+      'Your typed name constitutes a legally binding electronic signature under the federal E-SIGN Act (15 U.S.C. §7001).';
+    document.getElementById('sigNote').style.color = 'var(--muted)';
+  }
+}
+
+// ── STEP 2: SUBMIT SIGNATURE ────────────────────────────────
+async function submitSignature() {
+  const btn = document.getElementById('btnSign');
+  btn.disabled = true;
+  btn.textContent = 'SAVING SIGNATURE...';
+
+  const data = {
+    // Customer info
+    full_name: document.getElementById('fullName').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    phone: document.getElementById('phone').value.trim(),
+    state: document.getElementById('state').value,
+    zip: document.getElementById('zip').value.trim(),
+    // Vehicle info
+    vin: document.getElementById('vin').value.trim().toUpperCase(),
+    year: document.getElementById('vYear').value.trim(),
+    make: document.getElementById('vMake').value.trim(),
+    model: document.getElementById('vModel').value.trim(),
+    color: document.getElementById('vColor').value.trim(),
+    plate: document.getElementById('plate').value.trim().toUpperCase(),
+    // Signature
+    sig_name: document.getElementById('sigName').value.trim(),
+    sig_timestamp: new Date().toISOString(),
+    sig_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    tos_version: 'v7-2026-04-03',
+    // Checkboxes — all must be true to reach here
+    chk_arbitration: true,
+    chk_class_waiver: true,
+    chk_liability_caps: true,
+    chk_audio: true,
+    chk_electrical: true,
+    chk_ownership: true,
+    chk_installer_independence: true,
+    chk_full_agreement: true,
+    // Installer attribution
+    installer_id: INSTALLER_ID,
+    installer_name: INSTALLER_NAME,
+  };
+
+  try {
+    const res = await fetch(SERVER + '/sign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (!res.ok || !result.success) throw new Error(result.error || 'Server error');
+
+    // Success — go to redirect screen then to Stripe
+    showScreen(3);
+    if (!result.stripe_url) {
+      // No Stripe URL configured yet — show message instead of bouncing
+      document.querySelector('#screen3 div').innerHTML = `
+        <div class="logo" style="text-align:center;">TexTrack</div>
+        <div style="font-size:48px;margin:20px 0;">✅</div>
+        <div style="font-family:Bebas Neue,sans-serif;font-size:32px;color:var(--amber);margin-bottom:8px;">Agreement Signed</div>
+        <div style="font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.8;">
+          Your agreement has been recorded.<br>
+          Your installer will send you a payment link shortly.
+        </div>`;
+      return;
+    }
+    setTimeout(() => { window.location.href = result.stripe_url; }, 1800);
+
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'SIGN & PROCEED TO PAYMENT →';
+    const err = document.getElementById('err2');
+    err.style.display = 'block';
+    err.textContent = 'Error saving signature: ' + e.message + '. Please try again.';
+  }
+}
+
+function buildStripeUrl(data, installerId) {
+  // Fallback: build Stripe payment link URL with prefilled email
+  // The actual payment link URL comes from the server based on installer ID
+  return 'https://textrack.com/pay';
+}
+
+// ── NAVIGATION ──────────────────────────────────────────────
+function showScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen' + n).classList.add('active');
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.className = 'step ' + (i < n ? 'done' : i === n - 1 ? 'active' : '');
+  });
+  window.scrollTo(0, 0);
+}
+
+function goBack(n) { showScreen(n); }
+</script>
+</body>
+</html>
