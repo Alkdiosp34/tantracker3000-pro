@@ -1,0 +1,17 @@
+{
+  "name": "tantracker3000-pro",
+  "version": "1.0.0",
+  "description": "TanTracker3000 Pro — Commercial GPS Tracking Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0",
+    "@libsql/client": "^0.14.0",
+    "stripe": "^14.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
