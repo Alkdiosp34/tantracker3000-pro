@@ -532,8 +532,8 @@ footer {
 // ════════════════════════════════════════════════
 // CONFIG — update these before deploying
 // ════════════════════════════════════════════════
-const WS_URL = 'wss://tantracker3000-pro.onrender.com';
-const CLIENT_TOKEN = 'tt3k-6b013c92cface5653bcd4485'; // unique per customer — never share
+const WS_URL = 'wss://tantracker3000-pro1.onrender.com';
+const CLIENT_TOKEN = new URLSearchParams(window.location.search).get('token') || 'tt3k-6b013c92cface5653bcd4485'; // reads from URL ?token=
 // ── PIN CONFIG ───────────────────────────────────────────────
 // PIN is stored server-side, verified on login
 // First use: prompted to set PIN
@@ -556,17 +556,19 @@ function spupdate() {
   for (let i=0;i<5;i++) document.getElementById('sp'+i).classList.toggle('filled', i < sppin.length);
 }
 async function spcheck() {
-  if (sppin !== spConfirm && spPhase === 'confirm') {
-    // Compare against stored first entry
-    if (sppin !== window._spFirst) {
-      document.getElementById('setPinError').textContent = 'PINs do not match — try again';
-      spPhase = 'set'; sppin = ''; spConfirm = ''; window._spFirst = '';
-      document.getElementById('setPinLabel').textContent = 'CHOOSE A 5-DIGIT PIN';
-      spupdate();
-      return;
-    }
+  if (spPhase === 'set') {
+    window._spFirst = sppin;
+    spPhase = 'confirm'; sppin = ''; spupdate();
+    document.getElementById('setPinLabel').textContent = 'CONFIRM YOUR PIN';
+    return;
   }
-  if (spPhase === 'set') { window._spFirst = sppin; return; }
+  if (sppin !== window._spFirst) {
+    document.getElementById('setPinError').textContent = 'PINs do not match — try again';
+    spPhase = 'set'; sppin = ''; window._spFirst = '';
+    document.getElementById('setPinLabel').textContent = 'CHOOSE A 5-DIGIT PIN';
+    spupdate();
+    return;
+  }
 
   // Save PIN to server
   try {
