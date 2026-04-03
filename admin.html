@@ -381,11 +381,11 @@ async function addInstaller() {
 
     document.getElementById('installerSuccess').innerHTML =
       `Installer created! <br><br>
-       <strong>Onboarding link</strong> (send to installer to set up bank account):<br>
+       <strong>1. Send this onboarding link to the installer</strong> (they set up their bank account):<br>
        <span style="word-break:break-all;font-size:11px;">${result.onboarding_url}</span><br><br>
-       <strong>Customer signup link / QR code URL:</strong><br>
+       <strong>2. Their customer signup link:</strong><br>
        <span style="word-break:break-all;font-size:11px;color:#00cc66;">${linkResult.url}</span><br><br>
-       <span style="color:#aaa;font-size:11px;">Generate QR code at qr-code-generator.com</span>`;
+       <button onclick="showQrLink('${linkResult.url}','${name}')" style="margin-top:8px;padding:8px 20px;background:#e09020;color:#000;border:none;font-weight:bold;cursor:pointer;border-radius:4px;">SHOW QR CODE</button>`;
     document.getElementById('installerSuccess').style.display = 'block';
     document.getElementById('qrResult').style.display = 'none';
     loadAll();
@@ -396,15 +396,39 @@ async function addInstaller() {
 }
 
 function showQrLink(url, installerName) {
-  const signupUrl = url;
   const win = window.open('', '_blank');
   win.document.write(`
-    <html><body style="font-family:monospace;background:#0a0a0a;color:#e09020;padding:32px;">
-      <h2>Customer Signup Link for ${installerName}</h2>
-      <p style="word-break:break-all;margin:16px 0;color:#00cc66;">${signupUrl}</p>
-      <p style="color:#888;">Convert to QR code at qr-code-generator.com — give to installer to show customers.</p>
-      <a href="${signupUrl}" style="color:#00cc66;">Test the signup flow →</a>
-    </body></html>
+    <html>
+    <head>
+      <title>QR Code — ${installerName}</title>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+      <style>
+        body { font-family: monospace; background: #0a0a0a; color: #e09020; padding: 32px; text-align: center; }
+        h2 { margin-bottom: 8px; }
+        #qrcode { display: inline-block; background: #fff; padding: 16px; margin: 24px auto; border-radius: 8px; }
+        .url { word-break: break-all; font-size: 11px; color: #00cc66; margin: 16px 0; max-width: 500px; margin: 12px auto; }
+        .hint { color: #888; font-size: 12px; margin-top: 16px; }
+        .btn { display: inline-block; margin-top: 20px; padding: 10px 24px; background: #e09020; color: #000; text-decoration: none; font-weight: bold; border-radius: 4px; }
+      </style>
+    </head>
+    <body>
+      <h2>Customer Signup QR — ${installerName}</h2>
+      <div id="qrcode"></div>
+      <div class="url">${url}</div>
+      <div class="hint">Print this QR code and give it to the installer. Customers scan it to sign up.</div>
+      <br>
+      <a href="${url}" class="btn">Test the signup flow →</a>
+      <script>
+        new QRCode(document.getElementById('qrcode'), {
+          text: '${url}',
+          width: 256,
+          height: 256,
+          colorDark: '#000000',
+          colorLight: '#ffffff'
+        });
+      <\/script>
+    </body>
+    </html>
   `);
 }
 
