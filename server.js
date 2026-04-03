@@ -324,9 +324,35 @@ const httpServer = http.createServer(async (req, res) => {
               args: [sub.id]
             });
             console.log('[stripe] Subscription cancelled for', sub.id);
-          } catch(e) {}
-        }
-      }
+          // ETF auto-invoice for early cancellation
+            const r = await db.execute({
+              sql: 'SELECT * FROM vehicles WHERE stripe_subscription_id = ?',
+              args: [sub.id]
+            });
+            const vehicle = r.rows[0];
+            if (vehicle && vehicle.install_date) {
+              const monthsActive = Math.floor((Date.now() - vehicle.install_date) / (1000 * 60 * 60 * 24 * 30));
+              const remainingMonths = 4 - monthsActive;
+              if (remainingMonths > 0 && vehicle.stripe_customer_id) {
+                const etfAmount = remainingMonths * (vehicle.plan === 'multi' ? 19 : 22) * 100;
+                try {
+                  await stripe.invoiceItems.create({
+                    customer: vehicle.stripe_customer_id,
+                    amount: etfAmount,
+                    currency: 'usd',
+                    description: `Early termination fee — ${remainingMonths} remaining month(s) (VIN: ${vehicle.vin})`
+                  });
+                  const inv = await stripe.invoices.create({
+                    customer: vehicle.stripe_customer_id,
+                    collection_method: 'send_invoice',
+                    days_until_due: 30
+                  });
+                  await stripe.invoices.finalizeInvoice(inv.id);
+                  await stripe.invoices.sendInvoice(inv.id);
+                  console.log(`[stripe] ETF invoice sent: $${etfAmount/100} for ${remainingMonths} months`);
+                } catch(e) { console.error('[stripe] ETF invoice error:', e.message); }
+              }
+            }
 
       res.writeHead(200, { 'Content-Type': 'text/plain' }); res.end('ok');
     });
