@@ -421,7 +421,7 @@ const httpServer = http.createServer(async (req, res) => {
             { key: 'color', label: { type: 'custom', custom: 'Vehicle Color' }, type: 'text', optional: false },
             { key: 'plate', label: { type: 'custom', custom: 'License Plate + State' }, type: 'text', optional: false }
           ],
-          phone_collection: { enabled: true },
+          phone_number_collection: { enabled: true },
           // IMPORTANT: metadata uses installer_stripe_id so webhook can look up correct Stripe account
           metadata: {
             installer_stripe_id: data.installer_stripe_id,
