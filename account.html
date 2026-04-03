@@ -15,21 +15,21 @@
 body{background:var(--bg);color:var(--text);font-family:"Share Tech Mono",monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 16px 48px}
 .app-header{width:100%;max-width:520px;padding:20px 0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);margin-bottom:24px;display:none}
 .logo{font-family:"Rajdhani",sans-serif;font-weight:700;font-size:24px;color:var(--amber);letter-spacing:3px}
-.logo-sub{font-size:9px;color:var(--muted);letter-spacing:2px}
-.btn-signout{background:none;border:none;color:var(--muted);font-size:9px;letter-spacing:1px;cursor:pointer;font-family:inherit}
+.logo-sub{font-size:10px;color:#777;letter-spacing:2px}
+.btn-signout{background:none;border:none;color:#888;font-size:10px;letter-spacing:1px;cursor:pointer;font-family:inherit}
 .btn-signout:hover{color:var(--red)}
 .screen{display:none;width:100%;max-width:520px;flex-direction:column;align-items:center}
 .screen.active{display:flex}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:28px;width:100%;text-align:center;margin-top:16px}
 .card-icon{font-size:44px;margin-bottom:12px}
 .card-title{font-family:"Rajdhani",sans-serif;font-size:20px;font-weight:700;color:var(--bright);letter-spacing:2px;margin-bottom:6px}
-.card-sub{font-size:11px;color:var(--muted);line-height:1.8;margin-bottom:20px}
+.card-sub{font-size:12px;color:#999;line-height:1.8;margin-bottom:20px}
 .input{width:100%;background:#050505;border:1px solid var(--border);border-radius:5px;color:var(--bright);font-family:"Share Tech Mono",monospace;font-size:14px;padding:12px 14px;margin-bottom:12px;text-align:center;letter-spacing:1px}
 .input:focus{outline:none;border-color:var(--amber)}
 .btn-main{width:100%;background:var(--amber);color:#000;border:none;border-radius:5px;font-family:"Rajdhani",sans-serif;font-weight:700;font-size:16px;letter-spacing:3px;padding:14px;cursor:pointer}
 .btn-main:hover{opacity:.88}
 .btn-main:disabled{opacity:.35;cursor:not-allowed}
-.note{font-size:10px;color:var(--muted);margin-top:14px;line-height:1.7}
+.note{font-size:11px;color:#888;margin-top:14px;line-height:1.7}
 .msg{font-size:11px;margin-top:10px;min-height:18px;text-align:center}
 .msg.err{color:var(--red)}
 .msg.ok{color:var(--green)}
@@ -45,17 +45,17 @@ body{background:var(--bg);color:var(--text);font-family:"Share Tech Mono",monosp
 .vc-bar.cancelled{background:var(--red)}
 .vc-body{padding:18px 20px}
 .vc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
-.vc-name{font-family:"Rajdhani",sans-serif;font-size:19px;font-weight:700;color:var(--bright)}
-.vc-plate{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:2px}
+.vc-name{font-family:"Rajdhani",sans-serif;font-size:22px;font-weight:700;color:#fff}
+.vc-plate{font-size:11px;color:#999;letter-spacing:2px;margin-top:2px}
 .vc-badge{font-size:9px;letter-spacing:2px;padding:4px 10px;border-radius:20px;font-weight:bold;flex-shrink:0}
 .vc-badge.active{background:rgba(0,204,102,.1);color:var(--green);border:1px solid rgba(0,204,102,.25)}
 .vc-badge.cancelled{background:rgba(255,51,51,.08);color:var(--red);border:1px solid rgba(255,51,51,.2)}
 .paused-box{background:rgba(255,51,51,.04);border:1px solid rgba(255,51,51,.15);border-radius:6px;padding:14px 16px;margin-bottom:14px;text-align:center}
 .paused-title{font-family:"Rajdhani",sans-serif;font-size:14px;font-weight:700;color:var(--red);letter-spacing:3px;margin-bottom:4px}
-.paused-text{font-size:10px;color:#888;line-height:1.7}
+.paused-text{font-size:11px;color:#aaa;line-height:1.7}
 .vc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
-.vc-stat-label{font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:2px}
-.vc-stat-val{font-family:"Rajdhani",sans-serif;font-size:14px;font-weight:700;color:var(--bright)}
+.vc-stat-label{font-size:9px;letter-spacing:2px;color:#888;margin-bottom:2px}
+.vc-stat-val{font-family:"Rajdhani",sans-serif;font-size:16px;font-weight:700;color:#fff}
 .price-tag{display:inline-flex;align-items:center;gap:8px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:4px;padding:5px 10px;font-size:11px;margin-bottom:10px}
 .p-strike{text-decoration:line-through;color:#333}
 .p-now{color:var(--amber);font-weight:bold}
@@ -81,7 +81,7 @@ body{background:var(--bg);color:var(--text);font-family:"Share Tech Mono",monosp
     <div class="logo-sub">MY ACCOUNT</div>
   </div>
   <div style="text-align:right">
-    <div style="font-size:10px;color:var(--muted);" id="userEmail"></div>
+    <div style="font-size:11px;color:#aaa;" id="userEmail"></div>
     <button class="btn-signout" onclick="signOut()">Sign out</button>
   </div>
 </div>

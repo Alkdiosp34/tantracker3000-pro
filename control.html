@@ -19,7 +19,7 @@
 :root {
   --red: #ff2233; --blue: #1144ff; --amber: #ffaa00;
   --green: #00ff88; --dim: #07100a; --panel: #0f1f12;
-  --border: #1e4a24; --text: #a8e0b0; --bright: #e8ffe8; --muted: #5a8a64;
+  --border: #1e4a24; --text: #c0e8c8; --bright: #e8ffe8; --muted: #6a9a74;
   --route: #00aaff; --you: #ffaa00; --car: #00ff88;
 }
 
@@ -105,7 +105,7 @@ header {
 }
 .tab {
   padding:9px; text-align:center; font-size:11px; letter-spacing:2px;
-  color:var(--text); cursor:pointer; border-bottom:2px solid transparent; font-weight:600;
+  color:#c0e8c8; cursor:pointer; border-bottom:2px solid transparent; font-weight:700;
   transition:all 0.15s;
 }
 .tab.active { color:var(--green); border-bottom-color:var(--green); }
@@ -115,14 +115,14 @@ header {
 .tab-panel.active { display:flex; }
 
 .section-label {
-  font-size:10px; letter-spacing:2px; color:var(--text); font-weight:600;
+  font-size:10px; letter-spacing:2px; color:#cce8d0; font-weight:700;
   text-transform:uppercase; margin-bottom:2px;
 }
 
 /* TELEMETRY */
 .telem-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
 .telem-cell { background:#060d06; border:1px solid var(--border); border-radius:3px; padding:8px; }
-.telem-label { font-size:9px; color:var(--muted); margin-bottom:2px; }
+.telem-label { font-size:9px; color:#8ab89a; margin-bottom:2px; letter-spacing:1px; }
 .telem-val { font-size:14px; color:var(--amber); font-weight:700; }
 
 /* DIRECTIONS PANEL */
@@ -163,7 +163,7 @@ header {
   font-size:14px; flex-shrink:0;
 }
 .turn-text { font-size:12px; color:var(--bright); line-height:1.5; flex:1; font-weight:500; }
-.turn-dist { font-size:10px; color:var(--muted); margin-top:2px; }
+.turn-dist { font-size:10px; color:#8ab89a; margin-top:2px; }
 
 /* BUTTONS */
 .btn-group { display:flex; flex-direction:column; gap:6px; }
@@ -236,7 +236,7 @@ header {
   background:rgba(8,13,8,0.7); gap:8px; pointer-events:none;
 }
 .no-signal.hidden { display:none; }
-.no-signal-text { font-size:12px; color:var(--muted); letter-spacing:2px; }
+.no-signal-text { font-size:12px; color:#8ab89a; letter-spacing:2px; }
 
 /* FOOTER */
 footer {
