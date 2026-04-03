@@ -629,6 +629,8 @@ function spkey(d) {
   sppin += d;
   spupdate();
   if (sppin.length === 5 && spPhase === 'set') {
+    // Store first entry, switch to confirm phase
+    window._spFirst = sppin;
     setTimeout(() => { spPhase = 'confirm'; sppin = ''; spupdate(); document.getElementById('setPinLabel').textContent = 'CONFIRM YOUR PIN'; }, 300);
   } else if (sppin.length === 5 && spPhase === 'confirm') {
     setTimeout(spcheck, 100);
@@ -639,12 +641,7 @@ function spupdate() {
   for (let i=0;i<5;i++) document.getElementById('sp'+i).classList.toggle('filled', i < sppin.length);
 }
 async function spcheck() {
-  if (spPhase === 'set') {
-    window._spFirst = sppin;
-    spPhase = 'confirm'; sppin = ''; spupdate();
-    document.getElementById('setPinLabel').textContent = 'CONFIRM YOUR PIN';
-    return;
-  }
+  // Only called in confirm phase
   if (sppin !== window._spFirst) {
     document.getElementById('setPinError').textContent = 'PINs do not match — try again';
     spPhase = 'set'; sppin = ''; window._spFirst = '';
