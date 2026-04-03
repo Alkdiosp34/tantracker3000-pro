@@ -870,7 +870,7 @@ const httpServer = http.createServer(async (req, res) => {
           <div style="font-family:sans-serif;background:#0c0c0c;color:#ccc;padding:24px;">
             <h2 style="color:#e09020;">TexTrack Verification</h2>
             <p>Your verification code is:</p>
-            <div style="background:#111;border:1px solid #333;padding:16px;text-align:center;font-size:36px;font-weight:bold;color:#e09020;letter-spacing:8px;border-radius:4px;">\${code}</div>
+            <div style="background:#111;border:1px solid #333;padding:16px;text-align:center;font-size:36px;font-weight:bold;color:#e09020;letter-spacing:8px;border-radius:4px;">${code}</div>
             <p style="margin-top:16px;font-size:12px;color:#666;">This code expires in 10 minutes.</p>
           </div>
         `);
@@ -1051,12 +1051,12 @@ const httpServer = http.createServer(async (req, res) => {
         });
 
         const siteUrl = process.env.SITE_URL || 'https://alkdiosp34.github.io/tantracker3000-pro';
-        const resetUrl = `\${siteUrl}/control.html?token=\${data.token}&reset=\${resetCode}`;
+        const resetUrl = `${siteUrl}/control.html?token=${data.token}&reset=${resetCode}`;
         await sendEmail(vehicle.owner_email, 'TexTrack — PIN Reset', `
           <div style="font-family:sans-serif;background:#0c0c0c;color:#ccc;padding:24px;">
             <h2 style="color:#e09020;">TexTrack PIN Reset</h2>
             <p>Click below to set a new PIN:</p>
-            <a href="\${resetUrl}" style="display:inline-block;background:#e09020;color:#000;padding:12px 24px;text-decoration:none;font-weight:bold;border-radius:4px;">Reset My PIN</a>
+            <a href="${resetUrl}" style="display:inline-block;background:#e09020;color:#000;padding:12px 24px;text-decoration:none;font-weight:bold;border-radius:4px;">Reset My PIN</a>
             <p style="margin-top:16px;font-size:12px;color:#666;">This link expires in 30 minutes.</p>
           </div>
         `);
@@ -1094,6 +1094,28 @@ const httpServer = http.createServer(async (req, res) => {
         });
         res.writeHead(200, cors);
         res.end(JSON.stringify({ success: true }));
+      } catch(e) {
+        res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // ── ADMIN — RESET PIN (use admin key to clear a customer's PIN) ─
+  if (url.pathname === '/admin/pin-reset' && req.method === 'POST') {
+    if (!isAdmin(req)) { res.writeHead(401, cors); res.end(JSON.stringify({ error: 'Unauthorized' })); return; }
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.token) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token required' })); return; }
+        if (!db) { res.writeHead(503, cors); res.end(JSON.stringify({ error: 'DB unavailable' })); return; }
+        // Delete the pin record entirely — next login will trigger fresh setup
+        await db.execute({ sql: 'DELETE FROM pins WHERE token = ?', args: [data.token] });
+        console.log('[admin] PIN reset for token:', data.token);
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({ success: true, message: 'PIN cleared — customer will be prompted to set a new one' }));
       } catch(e) {
         res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
       }
