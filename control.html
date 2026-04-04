@@ -844,12 +844,11 @@ function toggle3D() {
   showMapToast(mode3D ? '3D MODE' : 'FLAT MAP');
 
   if (mode3D) {
-
     stopFollowMe();
     startNavMode();
   } else {
     stopNavMode();
-
+    document.getElementById('map').style.visibility = '';
     if (orientMode === 1) startLeafletCompass();
   }
 }
@@ -934,28 +933,34 @@ function initMapbox(onReady) {
 
 function startNavMode() {
   mbNavActive = true;
-  document.getElementById('mapbox').classList.add('active');
+  const mapboxEl = document.getElementById('mapbox');
+  mapboxEl.classList.add('active');
+  document.getElementById('map').style.visibility = 'hidden';
 
-  initMapbox(() => {
 
-    if (lastLat !== null) {
-      mbMap.jumpTo({ center: [lastLon, lastLat], zoom: 16, pitch: 60, bearing: yourHeading || 0 });
-    }
-
-    if (typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission()
-        .then(state => { if (state === 'granted') listenCompass(); })
-        .catch(() => listenCompass());
-    } else {
-      listenCompass();
-    }
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      initMapbox(() => {
+        if (lastLat !== null) {
+          mbMap.jumpTo({ center: [lastLon, lastLat], zoom: 16, pitch: 60, bearing: yourHeading || 0 });
+        }
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+          DeviceOrientationEvent.requestPermission()
+            .then(state => { if (state === 'granted') listenCompass(); })
+            .catch(() => listenCompass());
+        } else {
+          listenCompass();
+        }
+      });
+    });
   });
 }
 
 function stopNavMode() {
   mbNavActive = false;
   document.getElementById('mapbox').classList.remove('active');
+  document.getElementById('map').style.visibility = '';
   stopFollowMe();
 }
 
