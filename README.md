@@ -1,6 +1,6 @@
 # TanTracker3000 Pro
 
-Commercial GPS tracking platform. Stealth hardwired vehicle tracker with silent listen mode, 60-day location history, and automated billing.
+Commercial GPS tracking platform. Stealth hardwired vehicle tracker with silent listen mode, 60-day location history, and automated billing. 
 
 ## Files
 
