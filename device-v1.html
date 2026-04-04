@@ -227,7 +227,7 @@ footer {
 </div>
 
 <!-- DEBUG LOG (remove after testing) -->
-<div id="debugLog" style="position:fixed;bottom:0;left:0;right:0;z-index:9000;background:#000;color:#0f0;font-size:10px;font-family:monospace;max-height:120px;overflow-y:auto;padding:4px;border-top:1px solid #0f0;"></div>
+
 
 <!-- MAIN UI -->
 <header>
@@ -356,7 +356,7 @@ const SHUTDOWN_COUNTDOWN = 10;
 // ════════════════════════════════════════════════
 // PIN SYSTEM
 // ════════════════════════════════════════════════
-const STORAGE_KEY = 'tantracker3000_pin';
+const STORAGE_KEY = 'textrack_pin';
 let storedPin = localStorage.getItem(STORAGE_KEY);
 let pinEntry = '', settingPin = false, newPinTemp = '';
 
@@ -856,12 +856,7 @@ function setConn(s, l) {
   document.getElementById('connLabel').textContent = l;
 }
 function dbg(msg) {
-  const el = document.getElementById('debugLog');
-  if (!el) return;
-  const line = document.createElement('div');
-  line.textContent = new Date().toLocaleTimeString() + ' ' + msg;
-  el.appendChild(line);
-  el.scrollTop = el.scrollHeight;
+  // debug logging disabled for production
 }
 
 function handleCommand(msg) {

@@ -18,6 +18,10 @@ if (!process.env.ADMIN_KEY) {
   console.error('FATAL: ADMIN_KEY environment variable is required');
   process.exit(1);
 }
+if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  console.error('FATAL: STRIPE_WEBHOOK_SECRET environment variable is required');
+  process.exit(1);
+}
 const ADMIN_KEY = process.env.ADMIN_KEY;
 
 // ── TURSO DATABASE ────────────────────────────────────────────
