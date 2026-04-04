@@ -409,7 +409,7 @@ function hashPin(pin) {
 }
 
 function generateCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return String(crypto.randomInt(100000, 1000000));
 }
 
 async function getPinRecord(token) {
@@ -1192,10 +1192,16 @@ const httpServer = http.createServer(async (req, res) => {
       try {
         const data = JSON.parse(body);
         const siteUrl = process.env.SITE_URL || 'https://alkdiosp34.github.io/tantracker3000-pro';
+
+        // Use installer-specific price ID if provided, otherwise default to single
+        const monthlyPriceId = data.plan === 'multi'
+          ? (process.env.STRIPE_MULTI_PRICE_ID || process.env.STRIPE_SINGLE_PRICE_ID)
+          : process.env.STRIPE_SINGLE_PRICE_ID;
+
         const link = await stripe.paymentLinks.create({
           line_items: [
             { price: process.env.STRIPE_INSTALL_PRICE_ID, quantity: 1 },
-            { price: process.env.STRIPE_SINGLE_PRICE_ID, quantity: 1 }
+            { price: monthlyPriceId, quantity: 1 }
           ],
           custom_fields: [
             { key: 'vin', label: { type: 'custom', custom: 'Vehicle VIN (17 characters)' }, type: 'text', optional: false },
@@ -1222,6 +1228,87 @@ const httpServer = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ url: link.url }));
       } catch(e) {
         res.writeHead(400, cors); res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  // ── REACTIVATE — Initiate reactivation (admin triggers, sends link to customer) ─
+  if (url.pathname === '/reactivate/initiate' && req.method === 'POST') {
+    if (!isAdmin(req)) { res.writeHead(401, cors); res.end(JSON.stringify({ error: 'Unauthorized' })); return; }
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.token) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token required' })); return; }
+        if (!db) { res.writeHead(503, cors); res.end(JSON.stringify({ error: 'DB unavailable' })); return; }
+
+        const vehicle = await getVehicleByToken(data.token);
+        if (!vehicle) { res.writeHead(404, cors); res.end(JSON.stringify({ error: 'Vehicle not found' })); return; }
+
+        // Generate reactivation code
+        const code = crypto.randomBytes(16).toString('hex');
+        const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days
+
+        // Upsert reactivation record
+        await db.execute({
+          sql: `INSERT OR REPLACE INTO reactivations
+                (code, token, stripe_customer_id, owner_email, vin, make, model, year, color, plate, expires_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+          args: [code, vehicle.token, vehicle.stripe_customer_id, vehicle.owner_email,
+                 vehicle.vin, vehicle.make, vehicle.model, vehicle.year,
+                 vehicle.color, vehicle.plate, expiresAt]
+        });
+
+        const siteUrl = process.env.SITE_URL || 'https://alkdiosp34.github.io/tantracker3000-pro';
+        const reactivateUrl = `${siteUrl}/reactivate.html?code=${code}`;
+
+        // Build Stripe payment link for reactivation
+        let stripeUrl = null;
+        try {
+          const link = await stripe.paymentLinks.create({
+            line_items: [{ price: process.env.STRIPE_SINGLE_PRICE_ID, quantity: 1 }],
+            metadata: { reactivate_code: code },
+            customer_email: vehicle.owner_email || undefined,
+            after_completion: { type: 'redirect', redirect: { url: siteUrl + '/welcome.html' } }
+          });
+          stripeUrl = link.url;
+          // Save reactivation stripe link to record
+          await db.execute({
+            sql: 'UPDATE reactivations SET new_customer_id = ? WHERE code = ?',
+            args: [link.url, code] // reuse field to store link temporarily
+          });
+        } catch(e) {
+          console.error('[reactivate] Stripe link error:', e.message);
+        }
+
+        const finalUrl = stripeUrl || reactivateUrl;
+
+        // Send email if requested
+        let emailSent = false;
+        if (data.send_email && vehicle.owner_email) {
+          emailSent = await sendEmail(vehicle.owner_email, 'TexTrack — Restart Your Service', `
+            <div style="font-family:sans-serif;background:#0c0c0c;color:#ccc;padding:24px;">
+              <h2 style="color:#e09020;">Restart Your TexTrack Service</h2>
+              <p>Hi ${vehicle.owner_name || 'there'},</p>
+              <p>Click below to reactivate tracking for your ${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''} at $22/month:</p>
+              <a href="${finalUrl}" style="display:inline-block;background:#e09020;color:#000;padding:12px 24px;text-decoration:none;font-weight:bold;border-radius:4px;margin:16px 0;">Restart My Service</a>
+              <p style="font-size:12px;color:#666;">This link expires in 7 days. Questions? Reply to this email.</p>
+            </div>
+          `);
+        }
+
+        console.log('[reactivate] Initiated for token:', data.token, '| email sent:', emailSent);
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({
+          success: true,
+          reactivate_url: finalUrl,
+          email_sent: emailSent,
+          expires_at: expiresAt
+        }));
+      } catch(e) {
+        res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
       }
     });
     return;
