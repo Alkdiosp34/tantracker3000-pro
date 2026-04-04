@@ -211,8 +211,6 @@ position:absolute; bottom:40px; left:10px; z-index:1000;
 background:var(--panel); border:1px solid var(--border); border-radius:4px;
 padding:8px 10px; display:flex; flex-direction:column; gap:5px;
 }
-.legend-item { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--muted); }
-.legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 #mapToast {
 position:absolute; top:50%; left:50%;
 transform:translate(-50%,-50%);
@@ -226,17 +224,22 @@ white-space:nowrap; opacity:0; transition:opacity 0.35s ease;
 body.text-lg { font-size: 115%; }
 body.text-lg .telem-val { font-size:18px; }
 body.text-lg .telem-label { font-size:11px; }
-body.text-lg .cmd-btn { font-size:14px; padding:12px 14px; }
-body.text-lg .section-label { font-size:12px; }
+body.text-lg .cmd-btn { font-size:15px; padding:13px 16px; }
+body.text-lg .section-label { font-size:13px; }
 body.text-lg .sidebar-tabs button { font-size:13px; }
 body.text-lg .turn-text { font-size:14px; }
 body.text-lg .turn-dist { font-size:12px; }
 body.text-lg footer { font-size:12px; }
+body.text-lg .map-btn { font-size:14px; padding:11px 13px; }
+body.text-lg .legend-item { font-size:13px; }
+body.text-lg .legend-dot { width:13px; height:13px; }
 .telem-val { font-size:15px; color:var(--amber); font-weight:700; }
 .telem-label { font-size:10px; color:#aad8b0; margin-bottom:3px; letter-spacing:1px; font-weight:700; }
 .section-label { font-size:11px; letter-spacing:2px; color:#cce8d0; font-weight:700; padding:4px 0 2px 0; }
 .cmd-btn { font-size:13px; padding:11px 14px; font-weight:600; letter-spacing:0.5px; }
 .turn-text { font-size:13px; font-weight:600; }
+.legend-item { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text); font-weight:600; letter-spacing:0.5px; }
+.legend-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
 </style>
 </head>
 <body>
@@ -432,6 +435,15 @@ body.text-lg footer { font-size:12px; }
         <div class="btn-group">
           <button class="cmd-btn" onclick="sendCmd('screen_off')">
             <span class="btn-icon">○</span> FORCE SCREEN OFF
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">▸ Display</div>
+        <div class="btn-group">
+          <button class="cmd-btn" id="btnTextSizeCtrl" onclick="toggleTextSize()">
+            <span class="btn-icon">Aa</span> NORMAL TEXT
           </button>
         </div>
       </div>
@@ -830,8 +842,14 @@ function showMapToast(text) {
 let textLarge = localStorage.getItem('tt3k_textlg') === '1';
 function applyTextSize() {
   document.body.classList.toggle('text-lg', textLarge);
+
   const btn = document.getElementById('btnTextSize');
   if (btn) btn.classList.toggle('active', textLarge);
+
+  const ctrl = document.getElementById('btnTextSizeCtrl');
+  if (ctrl) ctrl.innerHTML = textLarge
+    ? '<span class="btn-icon">Aa</span> LARGE TEXT ON'
+    : '<span class="btn-icon">Aa</span> NORMAL TEXT';
 }
 function toggleTextSize() {
   textLarge = !textLarge;

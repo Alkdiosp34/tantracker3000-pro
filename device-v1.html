@@ -811,6 +811,34 @@ async function requestWakeLock() {
   if ('wakeLock' in navigator) try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
 }
 
+function fullyScreenOff() {
+
+  try {
+    if (window.fully) {
+      window.fully.turnScreenOff();
+    } else {
+
+      if (wakeLock) { wakeLock.release(); wakeLock = null; }
+    }
+  } catch(e) {}
+}
+
+function fullyScreenOn() {
+
+  try {
+    if (window.fully) {
+      window.fully.turnScreenOn();
+      window.fully.bringToForeground();
+    } else {
+      requestWakeLock();
+    }
+  } catch(e) {}
+}
+
+function releaseWakeLock() {
+  try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch(e) {}
+}
+
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && !phoneBatteryMode && !appSleeping) {
     try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch(e) {}
