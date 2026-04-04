@@ -546,7 +546,7 @@ footer {
       <button class="map-btn" onclick="map.zoomIn()">＋</button>
       <button class="map-btn" onclick="map.zoomOut()">－</button>
       <button class="map-btn" id="btnMapLayer" onclick="cycleMapLayer()" title="Change map style">🗺</button>
-      <button class="map-btn" id="btnNorthUp" onclick="toggleOrientation()" title="Toggle heading-up / north-up">⬆</button>
+      <button class="map-btn" id="btnNorthUp" onclick="cycleOrientation()" title="North up">⬆</button>
     </div>
 
     <div class="speed-overlay" id="speedOverlay">
@@ -794,8 +794,20 @@ const TILE_LAYERS = [
 ];
 let currentLayerIdx = 0;
 let activeLayer = null;
-let headingUp = false;
 let lastHeading = null;
+
+// ── Orientation modes ─────────────────────────────────────────
+// 0 = North-up (default)
+// 1 = Car heading-up (map rotates to match tracked car's direction)
+// 2 = Follow-me (map centers on you, rotates to your compass heading)
+const ORIENT_MODES = [
+  { icon: '⬆', label: 'NORTH UP',     cls: '' },
+  { icon: '🚗', label: 'CAR HEADING',  cls: 'active' },
+  { icon: '🧭', label: 'FOLLOW ME',    cls: 'active' }
+];
+let orientMode = 0;
+let followMeWatcher = null;
+let yourHeading = null;
 
 function cycleMapLayer() {
   currentLayerIdx = (currentLayerIdx + 1) % TILE_LAYERS.length;
@@ -808,10 +820,8 @@ function applyMapLayer() {
   if (activeLayer) map.removeLayer(activeLayer);
   activeLayer = L.tileLayer(def.url, def.opts).addTo(map);
   activeLayer.setZIndex(0);
-  // Apply CSS filter to tile layer
   const tiles = document.querySelectorAll('.leaflet-tile-pane');
   tiles.forEach(t => t.style.filter = def.filter);
-  // Also handle after tiles load
   activeLayer.on('load', () => {
     document.querySelectorAll('.leaflet-tile-pane').forEach(t => t.style.filter = def.filter);
   });
@@ -819,28 +829,71 @@ function applyMapLayer() {
   if (btn) btn.textContent = ['🌑','🛰','🗻'][currentLayerIdx];
 }
 
-function toggleOrientation() {
-  headingUp = !headingUp;
+function cycleOrientation() {
+  orientMode = (orientMode + 1) % 3;
   const btn = document.getElementById('btnNorthUp');
-  if (!headingUp) {
-    // Back to north-up — reset bearing
+  const mode = ORIENT_MODES[orientMode];
+  btn.textContent = mode.icon;
+  btn.className = 'map-btn' + (mode.cls ? ' ' + mode.cls : '');
+  btn.title = mode.label;
+  localStorage.setItem('tt3k_orient', orientMode);
+
+  if (orientMode === 0) {
+    // North-up — reset bearing, stop follow-me
     map.setBearing(0);
-    btn.textContent = '⬆';
-    btn.classList.remove('active');
-  } else {
-    btn.textContent = '🧭';
-    btn.classList.add('active');
-    // Apply last known heading immediately if we have one
+    stopFollowMe();
+  } else if (orientMode === 1) {
+    // Car heading-up
+    stopFollowMe();
     if (lastHeading !== null) map.setBearing(lastHeading);
+  } else if (orientMode === 2) {
+    // Follow-me — center on you, rotate by your compass
+    startFollowMe();
   }
-  localStorage.setItem('tt3k_headingup', headingUp ? '1' : '0');
+}
+
+function startFollowMe() {
+  // Use deviceorientation for compass heading
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+ requires permission
+    DeviceOrientationEvent.requestPermission()
+      .then(state => { if (state === 'granted') listenCompass(); })
+      .catch(() => showAlert('Compass permission denied', 'warn'));
+  } else {
+    listenCompass();
+  }
+}
+
+function listenCompass() {
+  window.addEventListener('deviceorientationabsolute', onCompass, true);
+  window.addEventListener('deviceorientation', onCompass, true);
+}
+
+function onCompass(e) {
+  if (orientMode !== 2) return;
+  // webkitCompassHeading is iOS, alpha is Android (inverted)
+  const heading = e.webkitCompassHeading != null
+    ? e.webkitCompassHeading
+    : e.absolute ? (360 - (e.alpha || 0)) : null;
+  if (heading === null) return;
+  yourHeading = heading;
+  map.setBearing(heading);
+  // Center map on your position in follow-me mode
+  if (yourLat !== null) map.setView([yourLat, yourLon], map.getZoom(), { animate: false });
+}
+
+function stopFollowMe() {
+  window.removeEventListener('deviceorientationabsolute', onCompass, true);
+  window.removeEventListener('deviceorientation', onCompass, true);
+  yourHeading = null;
 }
 
 function updateMapBearing(heading) {
   if (heading === null || heading === undefined) return;
   lastHeading = heading;
-  if (headingUp) map.setBearing(heading);
-  // Rotate the car icon arrow to match heading
+  if (orientMode === 1) map.setBearing(heading);
+  // Always update car icon rotation
   updateCarIcon(heading);
 }
 
@@ -871,14 +924,20 @@ function initMap() {
 
   map = L.map('map', { zoomControl:false, attributionControl:false, rotate: hasRotate }).setView([29.76, -95.36], 13);
 
-  // Restore saved layer preference
+  // Restore saved preferences
   const savedLayer = localStorage.getItem('tt3k_maplayer');
   if (savedLayer !== null) currentLayerIdx = parseInt(savedLayer) || 0;
-  headingUp = localStorage.getItem('tt3k_headingup') === '1';
-  if (headingUp) {
-    const btn = document.getElementById('btnNorthUp');
-    if (btn) { btn.textContent = '🧭'; btn.classList.add('active'); }
+  const savedOrient = localStorage.getItem('tt3k_orient');
+  if (savedOrient !== null) orientMode = parseInt(savedOrient) || 0;
+  // Apply saved orientation button state
+  const oMode = ORIENT_MODES[orientMode];
+  const orientBtn = document.getElementById('btnNorthUp');
+  if (orientBtn) {
+    orientBtn.textContent = oMode.icon;
+    orientBtn.className = 'map-btn' + (oMode.cls ? ' ' + oMode.cls : '');
+    orientBtn.title = oMode.label;
   }
+  if (orientMode === 2) startFollowMe();
   applyMapLayer();
 
   // Car marker — arrow when moving, dot when parked
