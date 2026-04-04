@@ -1411,6 +1411,79 @@ const httpServer = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── TRANSFER — Initiate vehicle transfer to new owner ────────
+  if (url.pathname === '/transfer/initiate' && req.method === 'POST') {
+    readBody(req).then(async body => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.token || !(await isValidToken(data.token))) {
+          res.writeHead(401, cors); res.end(JSON.stringify({ error: 'Invalid token' })); return;
+        }
+        if (!db) { res.writeHead(503, cors); res.end(JSON.stringify({ error: 'DB unavailable' })); return; }
+
+        const vehicle = await getVehicleByToken(data.token);
+        if (!vehicle) { res.writeHead(404, cors); res.end(JSON.stringify({ error: 'Vehicle not found' })); return; }
+
+        // Generate transfer code
+        const code = crypto.randomBytes(16).toString('hex');
+        const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days
+
+        await db.execute({
+          sql: `INSERT INTO transfers (code, token, old_customer_id, old_owner_email, vin, make, model, year, color, plate, expires_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+          args: [code, vehicle.token, vehicle.stripe_customer_id, vehicle.owner_email,
+                 vehicle.vin, vehicle.make, vehicle.model, vehicle.year,
+                 vehicle.color, vehicle.plate, expiresAt]
+        });
+
+        const siteUrl = process.env.SITE_URL || 'https://alkdiosp34.github.io/tantracker3000-pro';
+
+        // Build Stripe payment link for new owner
+        let stripeUrl = null;
+        try {
+          const link = await stripe.paymentLinks.create({
+            line_items: [
+              { price: process.env.STRIPE_INSTALL_PRICE_ID, quantity: 1 },
+              { price: process.env.STRIPE_SINGLE_PRICE_ID, quantity: 1 }
+            ],
+            custom_fields: [
+              { key: 'vin',   label: { type: 'custom', custom: 'Vehicle VIN (17 characters)' }, type: 'text', optional: false },
+              { key: 'make',  label: { type: 'custom', custom: 'Make (e.g. Toyota)' },          type: 'text', optional: false },
+              { key: 'model', label: { type: 'custom', custom: 'Model (e.g. Camry)' },          type: 'text', optional: false },
+              { key: 'year',  label: { type: 'custom', custom: 'Year (e.g. 2021)' },            type: 'text', optional: false },
+              { key: 'color', label: { type: 'custom', custom: 'Vehicle Color' },               type: 'text', optional: false },
+              { key: 'plate', label: { type: 'custom', custom: 'License Plate + State' },       type: 'text', optional: false }
+            ],
+            phone_number_collection: { enabled: true },
+            metadata: {
+              transfer_code: code,
+              installer_id: vehicle.installer_id || '',
+              installer_name: vehicle.installer_name || ''
+            },
+            after_completion: { type: 'redirect', redirect: { url: siteUrl + '/welcome.html' } }
+          });
+          stripeUrl = link.url;
+        } catch(e) {
+          console.error('[transfer] Stripe link error:', e.message);
+        }
+
+        const transferUrl = stripeUrl || `${siteUrl}/transfer.html?code=${code}`;
+        console.log('[transfer] Initiated for token:', data.token, 'code:', code);
+
+        res.writeHead(200, cors);
+        res.end(JSON.stringify({
+          success: true,
+          transfer_url: transferUrl,
+          code,
+          expires_at: expiresAt
+        }));
+      } catch(e) {
+        res.writeHead(500, cors); res.end(JSON.stringify({ error: e.message }));
+      }
+    }).catch(e => { res.writeHead(413, cors); res.end(JSON.stringify({ error: e.message })); });
+    return;
+  }
+
   // ── SIGN — Record TOS signature ──────────────────────────────
   if (url.pathname === '/sign' && req.method === 'POST') {
     readBody(req).then(async body => {

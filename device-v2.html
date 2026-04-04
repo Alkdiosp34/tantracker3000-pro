@@ -6,155 +6,141 @@
 <title>TexTrack — CAR UNIT v2 [TEST]</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap');
-
 :root {
-  --red:#ff2233; --blue:#1144ff; --amber:#ffaa00;
-  --green:#00ff88; --dim:#0a0f0a; --panel:#0d1a0d;
-  --border:#1a3a1a; --text:#88cc88; --bright:#ccffcc;
+--red:#ff2233; --blue:#1144ff; --amber:#ffaa00;
+--green:#00ff88; --dim:#0a0f0a; --panel:#0d1a0d;
+--border:#1a3a1a; --text:#88cc88; --bright:#ccffcc;
 }
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 body {
-  background:var(--dim); color:var(--text);
-  font-family:'Share Tech Mono',monospace;
-  height:100dvh; overflow:hidden; display:flex; flex-direction:column; user-select:none;
+background:var(--dim); color:var(--text);
+font-family:'Share Tech Mono',monospace;
+height:100dvh; overflow:hidden; display:flex; flex-direction:column; user-select:none;
 }
 body::after {
-  content:''; position:fixed; inset:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
-  pointer-events:none; z-index:500;
+content:''; position:fixed; inset:0;
+background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+pointer-events:none; z-index:500;
 }
-
 /* STROBE */
 /* SHUTDOWN OVERLAY */
 #shutdownOverlay {
-  position:fixed; inset:0; z-index:3000; background:#000;
-  display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+position:fixed; inset:0; z-index:3000; background:#000;
+display:none; flex-direction:column; align-items:center; justify-content:center; gap:14px;
 }
 #shutdownOverlay.show { display:flex; }
-.sd-logo  { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:22px; color:var(--red); letter-spacing:5px; }
-.sd-volt  { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:52px; color:var(--red); line-height:1; }
-.sd-msg   { font-size:11px; color:#ff6666; letter-spacing:2px; text-align:center; line-height:2; }
+.sd-logo { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:22px; color:var(--red); letter-spacing:5px; }
+.sd-volt { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:52px; color:var(--red); line-height:1; }
+.sd-msg { font-size:11px; color:#ff6666; letter-spacing:2px; text-align:center; line-height:2; }
 .sd-count { font-family:'Rajdhani',sans-serif; font-size:18px; color:var(--red); }
 .sd-bar-wrap { width:220px; height:6px; background:#1a0505; border-radius:3px; overflow:hidden; }
 .sd-bar { height:100%; width:100%; background:var(--red); border-radius:3px; transition:width 1s linear; }
 .sd-note { font-size:9px; color:#4a1111; letter-spacing:2px; margin-top:4px; }
-
 /* LOCK SCREEN */
 #lockScreen {
-  position:fixed; inset:0; z-index:2000; background:#000;
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+position:fixed; inset:0; z-index:2000; background:#000;
+display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
 }
-.lock-logo  { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:26px; color:var(--green); letter-spacing:6px; }
-.lock-sub   { font-size:11px; color:#4a7a4a; letter-spacing:2px; }
+.lock-logo { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:26px; color:var(--green); letter-spacing:6px; }
+.lock-sub { font-size:11px; color:#4a7a4a; letter-spacing:2px; }
 .setup-mode { font-size:11px; color:var(--amber); letter-spacing:1px; text-align:center; max-width:260px; }
 .pin-display { display:flex; gap:10px; }
 .pin-dot { width:14px; height:14px; border-radius:50%; border:1px solid #2a4a2a; background:transparent; }
 .pin-dot.filled { background:var(--green); border-color:var(--green); }
 .keypad { display:grid; grid-template-columns:repeat(3,70px); gap:8px; }
 .key {
-  height:60px; background:var(--panel); border:1px solid var(--border); border-radius:4px;
-  color:var(--bright); font-family:'Rajdhani',sans-serif; font-size:22px; font-weight:500;
-  cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.1s;
+height:60px; background:var(--panel); border:1px solid var(--border); border-radius:4px;
+color:var(--bright); font-family:'Rajdhani',sans-serif; font-size:22px; font-weight:500;
+cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.1s;
 }
 .key:active { background:#1a3a1a; border-color:var(--green); }
 .key.del { font-size:16px; color:#ff6666; }
 .key.empty { visibility:hidden; }
 .lock-error { font-size:11px; color:var(--red); height:16px; letter-spacing:1px; }
-
 /* HEADER */
 header {
-  background:var(--panel); border-bottom:1px solid var(--border);
-  padding:10px 16px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
+background:var(--panel); border-bottom:1px solid var(--border);
+padding:10px 16px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
 }
 .unit-id { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:18px; color:var(--green); letter-spacing:3px; }
 .conn-status { font-size:11px; display:flex; align-items:center; gap:6px; }
 .dot { width:8px; height:8px; border-radius:50%; background:#333; flex-shrink:0; }
-.dot.on   { background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
+.dot.on { background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
 .dot.warn { background:var(--amber); }
-.dot.off  { background:var(--red); }
+.dot.off { background:var(--red); }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
 /* MAIN */
 main { flex:1; display:flex; flex-direction:column; padding:10px; gap:8px; overflow:hidden; }
-
 /* SHARED PANEL BASE */
 .panel {
-  background:var(--panel); border:1px solid var(--border); border-radius:4px; padding:10px 12px;
-  display:flex; flex-direction:column; gap:8px;
+background:var(--panel); border:1px solid var(--border); border-radius:4px; padding:10px 12px;
+display:flex; flex-direction:column; gap:8px;
 }
 .panel-label { font-size:9px; letter-spacing:2px; color:#4a7a4a; text-transform:uppercase; }
-
 /* VOLTAGE PANEL */
 .volt-main { display:flex; align-items:baseline; gap:8px; }
 .volt-num {
-  font-family:'Rajdhani',sans-serif; font-weight:700; font-size:36px; line-height:1;
-  color:var(--green); transition:color 0.4s;
+font-family:'Rajdhani',sans-serif; font-weight:700; font-size:36px; line-height:1;
+color:var(--green); transition:color 0.4s;
 }
 .volt-unit { font-size:12px; color:#4a7a4a; }
-.volt-tag  { margin-left:auto; font-size:10px; padding:2px 8px; border-radius:2px; letter-spacing:1px; }
-.volt-tag.ok   { background:#0a2a0a; border:1px solid #1a5a1a; color:var(--green); }
+.volt-tag { margin-left:auto; font-size:10px; padding:2px 8px; border-radius:2px; letter-spacing:1px; }
+.volt-tag.ok { background:#0a2a0a; border:1px solid #1a5a1a; color:var(--green); }
 .volt-tag.warn { background:#2a1a00; border:1px solid #5a3a00; color:var(--amber); }
-.volt-tag.low  { background:#2a0f00; border:1px solid #6a2a00; color:#ff6600; }
+.volt-tag.low { background:#2a0f00; border:1px solid #6a2a00; color:#ff6600; }
 .volt-tag.crit { background:#2a0505; border:1px solid #6a0000; color:var(--red); }
-
 .volt-bar-wrap { width:100%; height:7px; background:#060d06; border:1px solid var(--border); border-radius:3px; overflow:hidden; }
 .volt-bar { height:100%; border-radius:3px; transition:width 1s ease, background 0.5s; }
-
 /* THRESHOLD TICKS */
 .volt-scale {
-  position:relative; height:14px; width:100%;
-  font-size:8px; color:#4a7a4a; letter-spacing:0;
+position:relative; height:14px; width:100%;
+font-size:8px; color:#4a7a4a; letter-spacing:0;
 }
 .tick { position:absolute; transform:translateX(-50%); white-space:nowrap; }
-
 /* CHARGE ROW */
 .charge-row { display:flex; align-items:center; gap:8px; font-size:10px; color:#4a7a4a; }
 .charge-indicator { width:8px; height:8px; border-radius:50%; background:#333; flex-shrink:0; }
-.charge-indicator.charging    { background:var(--amber); animation:pulse 1s infinite; }
-.charge-indicator.full        { background:var(--green); }
+.charge-indicator.charging { background:var(--amber); animation:pulse 1s infinite; }
+.charge-indicator.full { background:var(--green); }
 .charge-indicator.discharging { background:var(--red); }
 .phone-pct { margin-left:auto; color:#4a7a4a; }
-
 /* MANUAL VOLTAGE INPUT */
 .manual-row { display:flex; gap:6px; align-items:center; }
 .manual-label { font-size:9px; color:#4a7a4a; letter-spacing:1px; white-space:nowrap; }
 .manual-input {
-  flex:1; background:#060d06; border:1px solid var(--border); border-radius:3px;
-  color:var(--bright); font-family:'Share Tech Mono',monospace; font-size:13px;
-  padding:5px 8px; outline:none; -webkit-appearance:none;
+flex:1; background:#060d06; border:1px solid var(--border); border-radius:3px;
+color:var(--bright); font-family:'Share Tech Mono',monospace; font-size:13px;
+padding:5px 8px; outline:none; -webkit-appearance:none;
 }
 .manual-input:focus { border-color:var(--green); }
 .manual-btn {
-  background:#0a2a0a; border:1px solid #1a4a1a; border-radius:3px; color:var(--green);
-  font-family:'Share Tech Mono',monospace; font-size:11px; padding:5px 10px;
-  cursor:pointer; letter-spacing:1px; white-space:nowrap;
+background:#0a2a0a; border:1px solid #1a4a1a; border-radius:3px; color:var(--green);
+font-family:'Share Tech Mono',monospace; font-size:11px; padding:5px 10px;
+cursor:pointer; letter-spacing:1px; white-space:nowrap;
 }
 .manual-btn:active { background:#1a4a1a; }
-
 /* OBD ROW */
 .obd-row { display:flex; align-items:center; gap:8px; font-size:10px; }
 .obd-dot { width:7px; height:7px; border-radius:50%; background:#333; flex-shrink:0; }
 .obd-dot.connected { background:var(--green); }
-.obd-dot.scanning  { background:var(--amber); animation:pulse 1s infinite; }
+.obd-dot.scanning { background:var(--amber); animation:pulse 1s infinite; }
 .obd-label { color:#4a7a4a; flex:1; }
 .obd-btn {
-  background:transparent; border:1px solid var(--border); border-radius:2px;
-  color:var(--text); font-family:'Share Tech Mono',monospace; font-size:9px;
-  padding:3px 8px; cursor:pointer; letter-spacing:1px;
+background:transparent; border:1px solid var(--border); border-radius:2px;
+color:var(--text); font-family:'Share Tech Mono',monospace; font-size:9px;
+padding:3px 8px; cursor:pointer; letter-spacing:1px;
 }
 .obd-btn:active { background:#1a3a1a; }
-
 /* VOLTAGE ALERT BANNER */
 .volt-alert {
-  border-radius:3px; padding:7px 10px; font-size:11px;
-  display:none; align-items:center; gap:8px; letter-spacing:1px;
+border-radius:3px; padding:7px 10px; font-size:11px;
+display:none; align-items:center; gap:8px; letter-spacing:1px;
 }
 .volt-alert.show { display:flex; }
 .volt-alert.warn { background:#1a1000; border:1px solid #4a3000; color:var(--amber); animation:blink-a 1.5s infinite; }
-.volt-alert.crit { background:#1a0505; border:1px solid #6a0000; color:var(--red);   animation:blink-r 0.7s infinite; }
+.volt-alert.crit { background:#1a0505; border:1px solid #6a0000; color:var(--red); animation:blink-r 0.7s infinite; }
 @keyframes blink-a { 0%,100%{opacity:1} 50%{opacity:0.6} }
 @keyframes blink-r { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
 /* GPS PANEL */
 .coord-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .coord-box { background:#060d06; border:1px solid var(--border); border-radius:3px; padding:8px; }
@@ -163,39 +149,35 @@ main { flex:1; display:flex; flex-direction:column; padding:10px; gap:8px; overf
 .stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
 .stat-box { background:#060d06; border:1px solid var(--border); border-radius:3px; padding:7px; text-align:center; }
 .stat-label { font-size:8px; color:#4a7a4a; margin-bottom:2px; letter-spacing:1px; }
-.stat-val   { font-size:12px; color:var(--amber); }
-
+.stat-val { font-size:12px; color:var(--amber); }
 /* ALERT BANNER */
 .alert-banner {
-  background:#1a0505; border:1px solid #441111; border-radius:3px;
-  padding:7px 10px; font-size:11px; color:#ff6666;
-  display:none; align-items:center; gap:8px; animation:blink-r 1s infinite;
+background:#1a0505; border:1px solid #441111; border-radius:3px;
+padding:7px 10px; font-size:11px; color:#ff6666;
+display:none; align-items:center; gap:8px; animation:blink-r 1s infinite;
 }
 .alert-banner.show { display:flex; }
-
 /* AUDIO PANEL */
 .audio-panel {
-  background:var(--panel); border:1px solid var(--border); border-radius:4px;
-  padding:8px 12px; display:flex; align-items:center; gap:10px; flex-shrink:0;
+background:var(--panel); border:1px solid var(--border); border-radius:4px;
+padding:8px 12px; display:flex; align-items:center; gap:10px; flex-shrink:0;
 }
 .audio-bars { display:flex; align-items:flex-end; gap:2px; height:22px; }
 .bar { width:4px; background:var(--border); border-radius:2px; height:4px; transition:height 0.1s; }
 .bar.active { background:var(--green); }
 .audio-label { font-size:10px; color:#4a7a4a; }
 .audio-status { font-size:10px; color:var(--green); margin-left:auto; }
-
 /* FOOTER */
 footer {
-  background:var(--panel); border-top:1px solid var(--border);
-  padding:7px 16px; display:flex; justify-content:space-between; align-items:center;
-  font-size:10px; color:#4a7a4a; flex-shrink:0; letter-spacing:1px;
+background:var(--panel); border-top:1px solid var(--border);
+padding:7px 16px; display:flex; justify-content:space-between; align-items:center;
+font-size:10px; color:#4a7a4a; flex-shrink:0; letter-spacing:1px;
 }
 .time-display { color:var(--text); font-size:11px; }
 </style>
 </head>
 <body>
 
-<!-- SHUTDOWN OVERLAY -->
 <div id="shutdownOverlay">
   <div class="sd-logo">TexTrack</div>
   <div class="sd-volt" id="sdVolt">--.-V</div>
@@ -208,7 +190,6 @@ footer {
   <div class="sd-note">HARDWARE LVD CUTOFF ENGAGING</div>
 </div>
 
-<!-- LOCK SCREEN -->
 <div id="lockScreen">
   <div class="lock-logo">TexTrack</div>
   <div class="lock-sub" id="lockSub">ENTER PIN TO DISABLE</div>
@@ -226,10 +207,6 @@ footer {
   <div class="lock-error" id="lockError"></div>
 </div>
 
-<!-- DEBUG LOG (remove after testing) -->
-
-
-<!-- MAIN UI -->
 <header>
   <div class="unit-id">TexTrack</div>
   <div class="conn-status">
@@ -240,58 +217,19 @@ footer {
 
 <main>
 
-  <!-- VOLTAGE PANEL -->
-  <div class="panel" id="voltPanel">
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div class="panel-label">▸ BATTERY VOLTAGE</div>
-      <div style="font-size:9px;color:#4a7a4a;letter-spacing:1px;" id="engineState">ENGINE: UNKNOWN</div>
-    </div>
-
-    <div class="volt-main">
-      <div class="volt-num" id="voltDisplay">--.-</div>
-      <div class="volt-unit">V</div>
-      <div class="volt-tag ok" id="voltTag">NORMAL</div>
-    </div>
-
-    <div class="volt-bar-wrap">
-      <div class="volt-bar" id="voltBar" style="width:100%;background:var(--green);"></div>
-    </div>
-    <div class="volt-scale">
-      <span class="tick" style="left:0%">11.0</span>
-      <span class="tick" style="left:25%">11.8▲</span>
-      <span class="tick" style="left:50%">12.2</span>
-      <span class="tick" style="left:75%">12.6</span>
-      <span class="tick" style="left:100%">14.4</span>
-    </div>
-
-    <!-- Phone battery proxy -->
+  
+  <div class="panel" id="voltPanel" style="padding:8px 12px;">
     <div class="charge-row">
       <div class="charge-indicator" id="chargeDot"></div>
-      <span id="chargeLabel">CHECKING CHARGE STATUS...</span>
-      <span class="phone-pct" id="phonePct">PHONE: --%</span>
+      <span id="chargeLabel">CHECKING POWER STATUS...</span>
+      <span class="phone-pct" id="phonePct"></span>
     </div>
-
-    <!-- Manual voltage entry -->
-    <div class="manual-row">
-      <div class="manual-label">MANUAL V:</div>
-      <input class="manual-input" id="manualVolt" type="number" step="0.1" min="10" max="15" placeholder="e.g. 12.4">
-      <button class="manual-btn" onclick="applyManualVolt()">SET</button>
-    </div>
-
-    <!-- OBD-II Bluetooth (optional upgrade) -->
-    <div class="obd-row">
-      <div class="obd-dot" id="obdDot"></div>
-      <span class="obd-label" id="obdLabel">OBD-II BT: NOT CONNECTED (OPTIONAL)</span>
-      <button class="obd-btn" onclick="connectOBD()">SCAN</button>
-    </div>
-
-    <!-- Voltage alert -->
     <div class="volt-alert" id="voltAlert">
       <span>⚠</span><span id="voltAlertText">VOLTAGE WARNING</span>
     </div>
   </div>
 
-  <!-- GPS PANEL -->
+  
   <div class="panel" style="flex:1;min-height:0;">
     <div class="panel-label">▸ GPS TELEMETRY</div>
     <div class="coord-row">
@@ -299,7 +237,7 @@ footer {
       <div class="coord-box"><div class="coord-label">LONGITUDE</div><div class="coord-val" id="lon">---.------</div></div>
     </div>
     <div class="stat-row">
-      <div class="stat-box"><div class="stat-label">ACCURACY</div><div class="stat-val" id="acc">--m</div></div>
+      <div class="stat-box"><div class="stat-label">ACCURACY</div><div class="stat-val" id="acc">-- ft</div></div>
       <div class="stat-box"><div class="stat-label">SPEED</div><div class="stat-val" id="spd">-- mph</div></div>
       <div class="stat-box"><div class="stat-label">LAST PING</div><div class="stat-val" id="ping">--s</div></div>
     </div>
@@ -308,7 +246,7 @@ footer {
     </div>
   </div>
 
-  <!-- AUDIO PANEL -->
+  
   <div class="audio-panel">
     <div class="audio-bars" id="audioBars">
       <div class="bar"></div><div class="bar"></div><div class="bar"></div>
@@ -331,31 +269,23 @@ footer {
 </footer>
 
 <script>
-// ════════════════════════════════════════════════
-// CONFIG
-// ════════════════════════════════════════════════
-const WS_URL = 'wss://tantracker3000-pro1.onrender.com';
-const CLIENT_TOKEN = new URLSearchParams(window.location.search).get('token') || 'tt3k-6b013c92cface5653bcd4485'; // reads from URL ?token=
-// Adaptive ping intervals
-const PING_MOVING_MS  = 15000;  // 15s when moving (saves ~66% data vs 5s)
-const PING_PARKED_MS  = 120000; // 2 min when parked (saves ~50% data vs 60s)
-const PING_RECOVERY_MS = 10000; // 10s in recovery mode
+
+const WS_URL = 'wss:
+const CLIENT_TOKEN = new URLSearchParams(window.location.search).get('token') || 'tt3k-6b013c92cface5653bcd4485'; 
+
+const PING_MOVING_MS  = 15000;  
+const PING_PARKED_MS  = 120000; 
+const PING_RECOVERY_MS = 10000; 
 let recoveryMode = false;
-const MOVE_THRESHOLD_M = 10;    // meters of movement to count as "moving"
-const MOVE_SPEED_MPH   = 2;     // or if GPS speed exceeds this
+const MOVE_THRESHOLD_M = 10;    
+const MOVE_SPEED_MPH   = 2;     
 
-// Phone battery thresholds (0–100%)
-// Used after LVD cuts car power and phone runs on internal battery
-const PHONE_WARN     = 20;  // send warning to control panel
-const PHONE_FINAL    = 10;  // send final ping
-const PHONE_SHUTDOWN = 5;   // graceful shutdown
+const PHONE_WARN     = 20;  
+const PHONE_FINAL    = 10;  
+const PHONE_SHUTDOWN = 5;   
 
-// Shutdown countdown seconds
 const SHUTDOWN_COUNTDOWN = 10;
 
-// ════════════════════════════════════════════════
-// PIN SYSTEM
-// ════════════════════════════════════════════════
 const STORAGE_KEY = 'textrack_pin';
 let storedPin = localStorage.getItem(STORAGE_KEY);
 let pinEntry = '', settingPin = false, newPinTemp = '';
@@ -399,9 +329,6 @@ function checkPin() {
 }
 function unlock() { document.getElementById('lockScreen').style.display = 'none'; init(); }
 
-// ════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════
 let ws, startTime = Date.now(), pingCount = 0, lastPingTime = null;
 let torchTrack = null;
 let audioStream = null, peerConn = null;
@@ -409,12 +336,9 @@ let currentVoltage = null, voltSource = 'PHONE PROXY';
 let voltAlertSent = { warn:false, low:false, crit:false };
 let shutdownInProgress = false;
 let obdDevice = null, obdServer = null, obdChar = null;
-let appSleeping = false;      // true when screen intentionally off
-let phoneBatteryMode = false; // true when running on phone battery only
+let appSleeping = false;      
+let phoneBatteryMode = false; 
 
-// ════════════════════════════════════════════════
-// INIT
-// ════════════════════════════════════════════════
 function init() {
   startClock();
   startGPS();
@@ -424,9 +348,6 @@ function init() {
   startBatteryMonitor();
 }
 
-// ════════════════════════════════════════════════
-// CLOCK & UPTIME
-// ════════════════════════════════════════════════
 function startClock() {
   setInterval(() => {
     document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
@@ -439,16 +360,10 @@ function startClock() {
   }, 1000);
 }
 
-// ════════════════════════════════════════════════
-// BATTERY MONITOR
-// Simple and accurate — just checks if the phone
-// is charging or not. Charging = car power present.
-// Not charging = LVD tripped, switch to phone battery.
-// ════════════════════════════════════════════════
 async function startBatteryMonitor() {
   if (!('getBattery' in navigator)) {
     document.getElementById('chargeLabel').textContent = 'BATTERY API UNAVAILABLE';
-    document.getElementById('engineState').textContent = 'USE OBD-II FOR MONITORING';
+    
     return;
   }
   const batt = await navigator.getBattery().catch(() => null);
@@ -465,25 +380,25 @@ function updateChargingState(batt) {
   const lbl = document.getElementById('chargeLabel');
 
   if (batt.charging) {
-    // Car power present — normal mode
+    
     dot.className = 'charge-indicator charging';
     lbl.textContent = 'CAR POWER: PRESENT';
-    document.getElementById('engineState').textContent = 'HARDWIRE: ACTIVE';
-    document.getElementById('voltDisplay').textContent = 'OK';
-    document.getElementById('voltTag').textContent = 'CHARGING';
-    document.getElementById('voltTag').className = 'volt-tag ok';
-    document.getElementById('voltBar').style.width = '100%';
-    document.getElementById('voltBar').style.background = 'var(--green)';
-    // If we were in phone mode, restore normal operation
+    
+    
+    
+    
+    
+    
+    
     if (phoneBatteryMode) handleChargeRestored('CHARGING STATE');
   } else {
-    // Not charging — LVD has cut car power
+    
     dot.className = 'charge-indicator discharging';
     lbl.textContent = 'CAR POWER: CUT — ON PHONE BATTERY';
-    document.getElementById('engineState').textContent = 'HARDWIRE: INACTIVE';
-    document.getElementById('voltDisplay').textContent = '--';
-    document.getElementById('voltTag').textContent = 'NO CAR POWER';
-    document.getElementById('voltTag').className = 'volt-tag warn';
+    
+    
+    
+    
     if (!phoneBatteryMode && !shutdownInProgress) switchToPhoneBattery();
   }
 }
@@ -491,17 +406,14 @@ function updateChargingState(batt) {
 function updatePhonePct(batt) {
   const pct = Math.round(batt.level * 100);
   document.getElementById('phonePct').textContent = 'PHONE: ' + pct + '%';
-  // Update bar to show phone battery % when not charging
+  
   if (!batt.charging) {
-    document.getElementById('voltBar').style.width = pct + '%';
-    document.getElementById('voltBar').style.background = pct > 20 ? 'var(--amber)' : 'var(--red)';
-    document.getElementById('voltDisplay').textContent = pct;
+    
+    
+    
   }
 }
 
-// ════════════════════════════════════════════════
-// VOLTAGE ALERTS (used by phone battery monitor)
-// ════════════════════════════════════════════════
 function showVoltAlert(level, msg) {
   const el = document.getElementById('voltAlert');
   document.getElementById('voltAlertText').textContent = msg;
@@ -511,29 +423,23 @@ function hideVoltAlert() {
   document.getElementById('voltAlert').className = 'volt-alert';
 }
 
-// ════════════════════════════════════════════════
-// PHONE BATTERY MODE
-// After LVD cuts car power, phone runs on its own battery.
-// We monitor phone battery level and only shut down when
-// the phone itself is nearly dead.
-// ════════════════════════════════════════════════
 let phoneBatteryInterval = null;
 let phoneBattAlertSent = { warn:false, final:false, shutdown:false };
 
 function switchToPhoneBattery() {
   phoneBatteryMode = true;
   voltSource = 'PHONE BATTERY';
-  document.getElementById('engineState').textContent = 'CAR POWER: OFF — PHONE BATTERY';
-  document.getElementById('voltDisplay').textContent = '--.-';
-  document.getElementById('voltTag').textContent = 'PHONE MODE';
-  document.getElementById('voltTag').className = 'volt-tag warn';
+  
+  
+  
+  
 
-  // Release wake lock so Android can turn screen off naturally
+  
   releaseWakeLock();
-  // Tell Fully Kiosk to kill the backlight
+  
   fullyScreenOff();
 
-  // Start monitoring phone battery
+  
   if ('getBattery' in navigator) {
     navigator.getBattery().then(batt => {
       monitorPhoneBattery(batt);
@@ -547,25 +453,18 @@ function monitorPhoneBattery(batt) {
   const pct = Math.round(batt.level * 100);
   const charging = batt.charging;
 
-  // If phone started charging again, car power was restored
+  
   if (charging) {
     phoneBatteryMode = false;
     phoneBattAlertSent = { warn:false, final:false, shutdown:false };
     clearInterval(phoneBatteryInterval);
     showVoltAlert('ok', 'CAR POWER RESTORED — CHARGING');
     sendVoltageAlert('power_restored', null);
-    document.getElementById('engineState').textContent = 'CAR POWER: RESTORED';
+    
     return;
   }
 
   document.getElementById('phonePct').textContent = 'PHONE: ' + pct + '%';
-
-  // Show phone battery as the main voltage display
-  const bar = document.getElementById('voltBar');
-  bar.style.width = pct + '%';
-  bar.style.background = pct > 20 ? 'var(--amber)' : 'var(--red)';
-  document.getElementById('voltDisplay').textContent = pct;
-  document.getElementById('voltUnit') && (document.getElementById('voltUnit').textContent = '%');
 
   if (pct <= PHONE_SHUTDOWN && !phoneBattAlertSent.shutdown) {
     phoneBattAlertSent.shutdown = true;
@@ -588,14 +487,11 @@ function cancelPhoneBatteryShutdown() {
   phoneBatteryMode = false;
   phoneBattAlertSent = { warn:false, final:false, shutdown:false };
   clearInterval(phoneBatteryInterval);
-  // Car power restored — re-acquire wake lock, light screen back up
+  
   requestWakeLock();
   fullyScreenOn();
 }
 
-// ════════════════════════════════════════════════
-// GRACEFUL SHUTDOWN — only when phone battery is actually dead
-// ════════════════════════════════════════════════
 function beginShutdown(level, isPhonePct = false) {
   shutdownInProgress = true;
   const overlay = document.getElementById('shutdownOverlay');
@@ -620,11 +516,6 @@ function beginShutdown(level, isPhonePct = false) {
   }, 1000);
 }
 
-// ════════════════════════════════════════════════
-// GPS — ADAPTIVE PING
-// Sends every 5s while moving, every 60s while parked.
-// Movement is detected by distance travelled OR GPS speed.
-// ════════════════════════════════════════════════
 let lastPingedLat = null, lastPingedLon = null;
 let lastPosLat = null, lastPosCon = null;
 let pingTimer = null;
@@ -634,9 +525,9 @@ let currentLat = null, currentLon = null, currentAcc = null, currentMph = 0, cur
 function startGPS() {
   if (!navigator.geolocation) return;
 
-  // watchPosition fires whenever the device reports a new position.
-  // We store the latest coords but don't ping on every update —
-  // the adaptive timer below decides when to actually send.
+  
+  
+  
   navigator.geolocation.watchPosition(pos => {
     const { latitude:lat, longitude:lon, accuracy, speed, heading } = pos.coords;
     currentLat = lat;
@@ -647,29 +538,29 @@ function startGPS() {
 
     document.getElementById('lat').textContent = lat.toFixed(6);
     document.getElementById('lon').textContent = lon.toFixed(6);
-    document.getElementById('acc').textContent = Math.round(accuracy) + 'm';
+    document.getElementById('acc').textContent = Math.round(accuracy * 3.28084) + ' ft';
     document.getElementById('spd').textContent = currentMph + ' mph';
 
-    // Detect movement
+    
     const moved = (lastPingedLat !== null)
       ? haversineM(lat, lon, lastPingedLat, lastPingedLon)
       : 999;
     const wasMoving = isMoving;
     isMoving = (currentMph >= MOVE_SPEED_MPH) || (moved >= MOVE_THRESHOLD_M);
 
-    // If movement state changed, reschedule timer immediately
+    
     if (isMoving !== wasMoving) schedulePing(true);
 
   }, err => {
     console.warn('GPS error:', err.code, err.message);
-    // Don't reconnect WS on GPS error — they are unrelated
+    
   }, {
     enableHighAccuracy: true,
-    maximumAge: 30000,  // accept cached position up to 30s old — reduces battery + errors
-    timeout: 60000      // longer timeout — prevents spurious errors when parked
+    maximumAge: 30000,  
+    timeout: 60000      
   });
 
-  // Kick off the first ping cycle
+  
   schedulePing(false);
 }
 
@@ -686,7 +577,7 @@ function schedulePing(immediate) {
 }
 
 function sendLocation() {
-  if (currentLat === null) return; // no GPS fix yet
+  if (currentLat === null) return; 
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({
       type: 'location',
@@ -739,26 +630,17 @@ function sendVoltageAlert(level, v) {
   }
 }
 
-// ════════════════════════════════════════════════
-// OBD-II BLUETOOTH (optional upgrade)
-// ════════════════════════════════════════════════
-// Connects to an ELM327 Bluetooth LE OBD-II adapter.
-// These are ~$10–15 on Amazon. Search "ELM327 Bluetooth LE OBD2"
-// or "Veepeak BLE OBD2". Must be Bluetooth LOW ENERGY (BLE), not classic BT.
-// The adapter plugs into your car's OBD-II port (under dashboard, driver side).
-// Once connected, it reads actual battery voltage via AT command, replacing the proxy.
-
-const OBD_SERVICE   = '0000fff0-0000-1000-8000-00805f9b34fb'; // common ELM327 BLE service
-const OBD_CHAR_TX   = '0000fff2-0000-1000-8000-00805f9b34fb'; // write commands here
-const OBD_CHAR_RX   = '0000fff1-0000-1000-8000-00805f9b34fb'; // read responses here
+const OBD_SERVICE   = '0000fff0-0000-1000-8000-00805f9b34fb'; 
+const OBD_CHAR_TX   = '0000fff2-0000-1000-8000-00805f9b34fb'; 
+const OBD_CHAR_RX   = '0000fff1-0000-1000-8000-00805f9b34fb'; 
 
 async function connectOBD() {
   if (!navigator.bluetooth) {
-    document.getElementById('obdLabel').textContent = 'WEB BLUETOOTH NOT SUPPORTED';
+    
     return;
   }
-  document.getElementById('obdDot').className = 'obd-dot scanning';
-  document.getElementById('obdLabel').textContent = 'SCANNING FOR OBD-II ADAPTER...';
+  
+  
   try {
     obdDevice = await navigator.bluetooth.requestDevice({
       filters: [{ services: [OBD_SERVICE] }],
@@ -769,29 +651,29 @@ async function connectOBD() {
     obdChar = await svc.getCharacteristic(OBD_CHAR_RX);
     const txChar = await svc.getCharacteristic(OBD_CHAR_TX);
 
-    // Start notifications for incoming data
+    
     await obdChar.startNotifications();
     obdChar.addEventListener('characteristicvaluechanged', handleOBDResponse);
 
-    // Initialize ELM327
-    await sendOBDCmd(txChar, 'ATZ\r');    // reset
+    
+    await sendOBDCmd(txChar, 'ATZ\r');    
     await sleep(1000);
-    await sendOBDCmd(txChar, 'ATE0\r');   // echo off
-    await sendOBDCmd(txChar, 'ATL0\r');   // line feeds off
-    await sendOBDCmd(txChar, 'ATSP0\r');  // auto protocol
+    await sendOBDCmd(txChar, 'ATE0\r');   
+    await sendOBDCmd(txChar, 'ATL0\r');   
+    await sendOBDCmd(txChar, 'ATSP0\r');  
 
-    document.getElementById('obdDot').className   = 'obd-dot connected';
-    document.getElementById('obdLabel').textContent = 'OBD-II CONNECTED — LIVE VOLTAGE';
+    
+    
     voltSource = 'OBD-II BT';
 
-    // Poll battery voltage every 5 seconds
+    
     setInterval(async () => {
-      if (obdChar) await sendOBDCmd(txChar, 'ATRV\r'); // AT Read Voltage
+      if (obdChar) await sendOBDCmd(txChar, 'ATRV\r'); 
     }, 5000);
 
   } catch(e) {
-    document.getElementById('obdDot').className   = 'obd-dot';
-    document.getElementById('obdLabel').textContent = 'OBD-II: CONNECTION FAILED — ' + (e.message || 'USER CANCELLED');
+    
+    
     obdChar = null;
   }
 }
@@ -801,7 +683,7 @@ function handleOBDResponse(evt) {
   const val = new TextDecoder().decode(evt.target.value);
   obdBuffer += val;
   if (obdBuffer.includes('>')) {
-    // Parse ATRV response e.g. "12.4V"
+    
     const match = obdBuffer.match(/(\d{1,2}\.\d)/);
     if (match) {
       const v = parseFloat(match[1]);
@@ -821,9 +703,6 @@ async function sendOBDCmd(char, cmd) {
 }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ════════════════════════════════════════════════
-// WEBSOCKET
-// ════════════════════════════════════════════════
 let wsKeepalive = null;
 
 function connectWS() {
@@ -833,7 +712,7 @@ function connectWS() {
       dbg('WS CONNECTED');
       setConn('on', 'CONNECTED');
       ws.send(JSON.stringify({ type:'register', role:'device', token: CLIENT_TOKEN }));
-      // Send a ping every 15s to keep mobile Chrome from dropping the connection
+      
       clearInterval(wsKeepalive);
       wsKeepalive = setInterval(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
@@ -849,7 +728,7 @@ function connectWS() {
     ws.onerror = (e) => {
       console.warn('WS error:', e.message);
       setConn('warn', 'ERROR');
-      // Don't force reconnect here — onclose will handle it
+      
     };
     ws.onmessage = e => { dbg('RAW MSG: ' + e.data.slice(0,50)); handleCommand(JSON.parse(e.data)); };
   } catch(err) { setConn('off', 'OFFLINE'); setTimeout(connectWS, 5000); }
@@ -859,7 +738,7 @@ function setConn(s, l) {
   document.getElementById('connLabel').textContent = l;
 }
 function dbg(msg) {
-  // debug logging disabled for production
+  
 }
 
 function handleCommand(msg) {
@@ -870,14 +749,14 @@ function handleCommand(msg) {
     if (msg.type !== 'ice_candidate' && msg.type !== 'recovery_mode' && msg.type !== 'token_revoked') showAlert(msg.type.toUpperCase() + ' COMMAND');
     if (msg.type === 'screen_off') { dbg('SCREEN OFF'); releaseWakeLock(); fullyScreenOff(); }
 
-    // Recovery mode — server tells us to change ping rate
+    
     if (msg.type === 'recovery_mode') {
       recoveryMode = msg.active;
       dbg('RECOVERY MODE: ' + (recoveryMode ? 'ACTIVE' : 'OFF'));
       schedulePing(true);
     }
 
-    // Token revoked — subscription cancelled
+    
     if (msg.type === 'token_revoked') {
       dbg('TOKEN REVOKED — disconnecting');
       if (ws) ws.close();
@@ -891,16 +770,6 @@ function handleCommand(msg) {
   }
 }
 
-// ════════════════════════════════════════════════
-// FLASH / ALARM
-// ════════════════════════════════════════════════
-
-
-
-
-// ════════════════════════════════════════════════
-// AUDIO / WEBRTC
-// ════════════════════════════════════════════════
 async function requestMic() {
   try {
     audioStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
@@ -923,19 +792,19 @@ function animateBars() {
   draw();
 }
 async function handleOffer(msg) {
-  // STEALTH MODE — device sends mic audio but plays NOTHING
-  // The speaker stays completely silent — no sound from the device
+  
+  
   document.getElementById('audioStatus').textContent = 'TRANSMITTING...';
   document.getElementById('audioIcon').textContent = '●';
   document.getElementById('audioIcon').style.color = 'var(--green)';
 
   peerConn = new RTCPeerConnection({ iceServers:[{ urls:'stun:stun.l.google.com:19302' }] });
 
-  // Send our mic audio to the listener
+  
   if (audioStream) audioStream.getTracks().forEach(t => peerConn.addTrack(t, audioStream));
 
-  // ontrack fires if control sends audio back — we deliberately DO NOT play it
-  // This keeps the device completely silent
+  
+  
   peerConn.ontrack = () => {
     document.getElementById('audioStatus').textContent = 'MIC ACTIVE';
   };
@@ -953,14 +822,11 @@ async function handleOffer(msg) {
 }
 async function handleIce(msg) { if (peerConn && msg.candidate) await peerConn.addIceCandidate(msg.candidate).catch(()=>{}); }
 
-// ════════════════════════════════════════════════
-// MISC
-// ════════════════════════════════════════════════
 let wakeLock = null;
 async function requestWakeLock() {
   if ('wakeLock' in navigator) try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
 }
-// Re-acquire wake lock when page regains visibility (browsers release it on hide)
+
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && !phoneBatteryMode && !appSleeping) {
     try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch(e) {}

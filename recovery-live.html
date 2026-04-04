@@ -11,34 +11,34 @@
 body { background:#0a0a0a; color:#e8e4de; font-family:'Segoe UI',system-ui,sans-serif; }
 #map { width:100%; height:100vh; }
 .overlay {
-  position:fixed; top:0; left:0; right:0; z-index:1000;
-  background:linear-gradient(180deg, rgba(204,51,51,0.95) 0%, rgba(204,51,51,0) 100%);
-  padding:16px 20px 40px;
+position:fixed; top:0; left:0; right:0; z-index:1000;
+background:linear-gradient(180deg, rgba(204,51,51,0.95) 0%, rgba(204,51,51,0) 100%);
+padding:16px 20px 40px;
 }
 .title { font-size:14px; font-weight:700; letter-spacing:2px; color:#fff; }
 .subtitle { font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px; }
 .info-bar {
-  position:fixed; bottom:0; left:0; right:0; z-index:1000;
-  background:rgba(10,10,10,0.95); border-top:2px solid #cc3333;
-  padding:16px 20px; display:flex; justify-content:space-between; align-items:center;
+position:fixed; bottom:0; left:0; right:0; z-index:1000;
+background:rgba(10,10,10,0.95); border-top:2px solid #cc3333;
+padding:16px 20px; display:flex; justify-content:space-between; align-items:center;
 }
 .stat { text-align:center; }
 .stat-label { font-size:10px; color:#666; letter-spacing:1px; }
 .stat-value { font-size:18px; font-weight:600; color:#fff; margin-top:2px; }
 .stat-value.speed { color:#cc3333; }
 .pulse-dot {
-  width:20px; height:20px; background:#cc3333; border-radius:50%;
-  border:3px solid #fff; box-shadow:0 0 20px #cc3333;
-  animation:pulse 1.5s ease-in-out infinite;
+width:20px; height:20px; background:#cc3333; border-radius:50%;
+border:3px solid #fff; box-shadow:0 0 20px #cc3333;
+animation:pulse 1.5s ease-in-out infinite;
 }
 @keyframes pulse {
-  0%, 100% { box-shadow:0 0 10px #cc3333; }
-  50% { box-shadow:0 0 30px #cc3333, 0 0 60px rgba(204,51,51,0.3); }
+0%, 100% { box-shadow:0 0 10px #cc3333; }
+50% { box-shadow:0 0 30px #cc3333, 0 0 60px rgba(204,51,51,0.3); }
 }
 .expired {
-  position:fixed; top:0; left:0; right:0; bottom:0; z-index:2000;
-  background:rgba(10,10,10,0.95); display:flex; align-items:center;
-  justify-content:center; flex-direction:column;
+position:fixed; top:0; left:0; right:0; bottom:0; z-index:2000;
+background:rgba(10,10,10,0.95); display:flex; align-items:center;
+justify-content:center; flex-direction:column;
 }
 .expired-text { font-size:18px; color:#666; letter-spacing:2px; }
 </style>
@@ -80,11 +80,10 @@ if (!shareCode) {
   document.getElementById('statusText').textContent = 'Invalid link';
 }
 
-// ── SERVER URL — update this when switching to custom domain ──
-const SERVER_URL = 'https://tantracker3000-pro.onrender.com';
+const SERVER_URL = 'https:
 
 const map = L.map('map', { zoomControl: false, attributionControl: false }).setView([29.76, -95.36], 14);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+L.tileLayer('https:
 
 const carIcon = L.divIcon({
   html: '<div class="pulse-dot"></div>',
