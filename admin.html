@@ -216,7 +216,8 @@ tr:hover td { background:rgba(255,255,255,0.02); }
 </div>
 
 <script>
-const SERVER = 'https://TexTrack-pro.onrender.com';
+// ── SERVER URL — update this when switching to custom domain ──
+const SERVER = 'https://tantracker3000-pro1.onrender.com';
 let adminKey = '';
 let allVehicles = [];
 let allInstallers = [];
@@ -336,7 +337,7 @@ function renderInstallers(installers) {
       </td>
       <td><span class="badge badge-${i.status}">${i.status?.toUpperCase()}</span></td>
       <td>
-        ${i.stripe_payment_link 
+        ${i.stripe_payment_link
           ? `<button class="btn-sm" onclick="showQrLink('${i.stripe_payment_link}','${i.name}')">GET QR LINK</button>`
           : `<button class="btn-sm" onclick="generatePaymentLink('${i.stripe_account_id}','${i.name}')">GEN QR LINK</button>`
         }
