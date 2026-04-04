@@ -684,10 +684,7 @@ async function showForgotPin() {
   } catch(e) { document.getElementById('loginError').textContent = 'Connection error'; }
 }
 
-const HERE_API_KEY = '';
-
 const REROUTE_INTERVAL = 10;
-
 const REROUTE_THRESHOLD = 50;
 
 let map, routeLine, carMarker, youMarker;
@@ -1271,24 +1268,24 @@ function maybeReroute() {
   }
 
 
+  routeFailCount = 0;
   clearTimeout(routeTimer);
   routeTimer = setTimeout(fetchRoute, 800);
 }
+
+const OSRM_BASE = 'https://routing.openstreetmap.de/routed-car/route/v1/driving';
+let routeFailCount = 0;
+const MAX_ROUTE_FAILS = 3;
 
 async function fetchRoute() {
   if (yourLat === null || lastLat === null) return;
   setRouteStatus('routing', 'ROUTING...');
 
   try {
-    let result;
-    if (HERE_API_KEY) {
-      result = await fetchHereRoute();
-    } else {
-      result = await fetchOSRMRoute();
-    }
-
+    const result = await fetchOSRMRoute();
     if (!result) { setRouteStatus('error', 'ROUTE UNAVAILABLE'); return; }
 
+    routeFailCount = 0;
     drawRoute(result.coords);
     updateDirectionsPanel(result);
     updateEtaBadge(result);
@@ -1300,15 +1297,24 @@ async function fetchRoute() {
     setRouteStatus('active', 'ROUTE ACTIVE — AUTO-UPDATING');
 
   } catch(e) {
-    console.error('Route error:', e);
+    routeFailCount++;
+    if (routeFailCount >= MAX_ROUTE_FAILS) {
+
+      setRouteStatus('error', 'ROUTING UNAVAILABLE');
+      routeActive = false;
+      return;
+    }
+
+    const delay = routeFailCount * 5000;
     setRouteStatus('error', 'ROUTING FAILED — RETRYING');
-    routeTimer = setTimeout(fetchRoute, 5000);
+    routeTimer = setTimeout(fetchRoute, delay);
   }
 }
 
 async function fetchOSRMRoute() {
-  const url = `https://router.project-osrm.org/route/v1/driving/${yourLon},${yourLat};${lastLon},${lastLat}?overview=full&geometries=geojson&steps=true&annotations=false`;
-  const r = await fetch(url);
+  const url = `${OSRM_BASE}/${yourLon},${yourLat};${lastLon},${lastLat}?overview=full&geometries=geojson&steps=true&annotations=false`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) return null;
   const d = await r.json();
   if (d.code !== 'Ok' || !d.routes.length) return null;
 
@@ -1318,7 +1324,7 @@ async function fetchOSRMRoute() {
   const mins = Math.round(route.duration / 60);
   const steps = extractOSRMSteps(route.legs[0].steps);
 
-  return { coords, distMi, mins, steps, traffic:'OSRM (no live traffic)', trafficLevel:'light' };
+  return { coords, distMi, mins, steps, traffic: 'NO LIVE TRAFFIC', trafficLevel: 'light' };
 }
 
 function extractOSRMSteps(steps) {
@@ -1331,49 +1337,6 @@ function extractOSRMSteps(steps) {
       dist: s.distance > 1000 ? (s.distance/1000).toFixed(1) + ' km' : Math.round(s.distance) + ' m'
     };
   }).slice(0, 12);
-}
-
-async function fetchHereRoute() {
-  const url = `https://router.hereapi.com/v8/routes?transportMode=car&origin=${yourLat},${yourLon}&destination=${lastLat},${lastLon}&return=polyline,summary,actions,instructions&departureTime=now&apiKey=${HERE_API_KEY}`;
-  const r = await fetch(url);
-  const d = await r.json();
-  if (!d.routes || !d.routes.length) return null;
-
-  const route = d.routes[0];
-  const section = route.sections[0];
-  const summary = section.summary;
-
-
-  const coords = decodeHerePolyline(section.polyline);
-  const distMi = (summary.length * 0.000621371).toFixed(1);
-  const mins = Math.round(summary.duration / 60);
-  const baseMins = Math.round((summary.baseDuration || summary.duration) / 60);
-  const delay = mins - baseMins;
-  const trafficLevel = delay > 10 ? 'heavy' : delay > 3 ? 'moderate' : 'light';
-  const trafficText = delay > 0 ? `+${delay} min delay · ${trafficLevel} traffic` : 'Traffic clear';
-
-  const steps = (section.actions || []).slice(0, 12).map(a => ({
-    icon: hereActionIcon(a.action, a.direction),
-    text: a.instruction || a.action,
-    dist: a.length > 1000 ? (a.length/1000).toFixed(1) + ' km' : Math.round(a.length) + ' m'
-  }));
-
-  return { coords, distMi, mins, steps, traffic:trafficText, trafficLevel };
-}
-
-function decodeHerePolyline(encoded) {
-  const result = [];
-  let index = 0, lat = 0, lng = 0;
-  const toSigned = val => val & 1 ? ~(val >> 1) : val >> 1;
-  while (index < encoded.length) {
-    let b, shift = 0, val = 0;
-    do { b = encoded.charCodeAt(index++) - 45; val |= (b & 0x1f) << shift; shift += 5; } while (b >= 32);
-    lat += toSigned(val); shift = 0; val = 0;
-    do { b = encoded.charCodeAt(index++) - 45; val |= (b & 0x1f) << shift; shift += 5; } while (b >= 32);
-    lng += toSigned(val);
-    result.push([lat / 1e5, lng / 1e5]);
-  }
-  return result;
 }
 
 function drawRoute(coords) {
