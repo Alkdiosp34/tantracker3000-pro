@@ -13,6 +13,7 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
   onerror="this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'"/>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap');
 :root {
@@ -154,6 +155,8 @@ letter-spacing:1px; transition:all 0.15s; text-align:left; color:var(--bright);
 .btn-icon { font-size:16px; width:20px; text-align:center; }
 .map-area { position:relative; overflow:hidden; }
 #map { width:100%; height:100%; background:#0a0f0a; }
+#mapbox { position:absolute; inset:0; display:none; }
+#mapbox.active { display:block; }
 .leaflet-tile { filter:invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.7); }
 .leaflet-control-attribution { display:none; }
 .map-overlay {
@@ -535,6 +538,7 @@ body.text-xl .btn-icon { font-size:22px; width:26px; }
   
   <div class="map-area">
     <div id="map"></div>
+    <div id="mapbox"></div>
 
     <div class="no-signal" id="noSignal">
       <div style="font-size:28px;opacity:0.3">◌</div>
@@ -542,8 +546,8 @@ body.text-xl .btn-icon { font-size:22px; width:26px; }
     </div>
 
     <div class="map-overlay">
-      <button class="map-btn" onclick="map.zoomIn()">＋</button>
-      <button class="map-btn" onclick="map.zoomOut()">－</button>
+      <button class="map-btn" onclick="orientMode===1 ? mbMap.zoomIn() : map.zoomIn()">＋</button>
+      <button class="map-btn" onclick="orientMode===1 ? mbMap.zoomOut() : map.zoomOut()">－</button>
       <button class="map-btn" id="btnMapLayer" onclick="cycleMapLayer()" title="Change map style">🗺</button>
       <button class="map-btn" id="btnNorthUp" onclick="cycleOrientation()" title="North up">⬆</button>
       <button class="map-btn" id="btnTextSize" onclick="toggleTextSize()" title="Text size" style="font-weight:700;color:#fff;">Aa</button>
@@ -583,10 +587,13 @@ body.text-xl .btn-icon { font-size:22px; width:26px; }
 </script>
 
 <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate-src.js"></script>
+
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script>
 
 const WS_URL = 'wss://tantracker3000-pro.onrender.com';
 const CLIENT_TOKEN = new URLSearchParams(window.location.search).get('token') || 'tt3k-6b013c92cface5653bcd4485';
+const MAPBOX_TOKEN = 'pk.eyJ1IjoieWVlaG9vbWNzcXVpZG9vMjM0IiwiYSI6ImNtbmp1cjJmbjBzNTEycXBrbnNtNWszeWkifQ.fuBGrpzsoKphnXUGLeUWjg';
 
 const SESSION_DAYS = 60;
 const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
@@ -816,13 +823,144 @@ function cycleOrientation() {
   showMapToast(mode.label);
 
   if (orientMode === 0) {
-    map.setBearing(0);
-    stopFollowMe();
+    stopNavMode();
   } else {
-    startFollowMe();
+    startNavMode();
   }
 }
 
+let mbMap = null;
+let mbCarMarker = null;
+let mbYouMarker = null;
+let mbNavActive = false;
+
+function initMapbox() {
+  if (mbMap) return;
+  mapboxgl.accessToken = MAPBOX_TOKEN;
+  mbMap = new mapboxgl.Map({
+    container: 'mapbox',
+    style: 'mapbox://styles/mapbox/navigation-night-v1',
+    center: [lastLon || -95.36, lastLat || 29.76],
+    zoom: 16,
+    pitch: 60,
+    bearing: 0,
+    antialias: true
+  });
+
+
+  const carEl = document.createElement('div');
+  carEl.innerHTML = `<div style="width:32px;height:32px;position:relative;">
+    <div style="position:absolute;inset:0;border-radius:50%;background:#00ff88;opacity:0.3;animation:ripple 2s infinite"></div>
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(0deg);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:28px solid #00ff88;filter:drop-shadow(0 0 8px #00ff88);" id="mbArrow"></div>
+  </div>`;
+  carEl.style.cssText = 'width:32px;height:32px;cursor:default;';
+  mbCarMarker = new mapboxgl.Marker({ element: carEl, rotationAlignment: 'map' })
+    .setLngLat([lastLon || -95.36, lastLat || 29.76])
+    .addTo(mbMap);
+  if (lastLat !== null) mbCarMarker.setLngLat([lastLon, lastLat]);
+
+
+  const youEl = document.createElement('div');
+  youEl.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#ffaa00;border:3px solid #fff;box-shadow:0 0 8px #ffaa00;';
+  mbYouMarker = new mapboxgl.Marker({ element: youEl })
+    .setLngLat([yourLon || -95.36, yourLat || 29.76])
+    .addTo(mbMap);
+  if (yourLat !== null) mbYouMarker.setLngLat([yourLon, yourLat]);
+
+
+  mbMap.on('load', () => {
+    mbMap.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
+    mbMap.addLayer({ id: 'route', type: 'line', source: 'route',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#00aaff', 'line-width': 5, 'line-opacity': 0.85 }
+    });
+  });
+}
+
+function startNavMode() {
+  mbNavActive = true;
+  initMapbox();
+
+  document.getElementById('mapbox').classList.add('active');
+
+  if (lastLat !== null) {
+    mbMap.setCenter([lastLon, lastLat]);
+    mbCarMarker.setLngLat([lastLon, lastLat]);
+  }
+
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(state => { if (state === 'granted') listenCompass(); })
+      .catch(() => showAlert('COMPASS PERMISSION DENIED'));
+  } else {
+    listenCompass();
+  }
+}
+
+function stopNavMode() {
+  mbNavActive = false;
+  document.getElementById('mapbox').classList.remove('active');
+  stopFollowMe();
+  map.setBearing(0);
+}
+
+function listenCompass() {
+  window.addEventListener('deviceorientationabsolute', onCompass, true);
+  window.addEventListener('deviceorientation', onCompass, true);
+}
+
+function onCompass(e) {
+  if (!mbNavActive) return;
+  const heading = e.webkitCompassHeading != null
+    ? e.webkitCompassHeading
+    : e.absolute ? (360 - (e.alpha || 0)) : null;
+  if (heading === null) return;
+  yourHeading = heading;
+  if (!mbMap) return;
+
+  mbMap.easeTo({ bearing: heading, pitch: 60, duration: 300, easing: t => t });
+
+  if (yourLat !== null) {
+    mbMap.setCenter([yourLon, yourLat]);
+    mbYouMarker.setLngLat([yourLon, yourLat]);
+  }
+}
+
+function stopFollowMe() {
+  window.removeEventListener('deviceorientationabsolute', onCompass, true);
+  window.removeEventListener('deviceorientation', onCompass, true);
+  yourHeading = null;
+}
+
+function updateMapboxCar(lat, lon, heading) {
+  if (!mbMap || !mbCarMarker) return;
+  mbCarMarker.setLngLat([lon, lat]);
+
+  if (heading !== null && heading !== undefined) {
+    const arrow = document.getElementById('mbArrow');
+    if (arrow) arrow.style.transform = `translate(-50%,-50%) rotate(${heading}deg)`;
+  }
+
+  if (mbNavActive && yourLat === null) {
+    mbMap.easeTo({ center: [lon, lat], duration: 800 });
+  }
+}
+
+function updateMapboxRoute(coords) {
+  if (!mbMap || !mbMap.getSource('route')) return;
+  mbMap.getSource('route').setData({
+    type: 'Feature',
+    geometry: { type: 'LineString', coordinates: coords }
+  });
+}
+
+function updateMapBearing(heading) {
+  if (heading === null || heading === undefined) return;
+  lastHeading = heading;
+  updateCarIcon(heading);
+  updateMapboxCar(lastLat, lastLon, heading);
+}
 let toastTimer = null;
 function showMapToast(text) {
   const el = document.getElementById('mapToast');
@@ -952,7 +1090,7 @@ function initMap() {
     orientBtn.className = 'map-btn' + (oMode.cls ? ' ' + oMode.cls : '');
     orientBtn.title = oMode.label;
   }
-  if (orientMode === 1) startFollowMe();
+  if (orientMode === 1) startNavMode();
   applyMapLayer();
 
 
@@ -1002,6 +1140,8 @@ function startYourLocation() {
     youMarker.setLatLng([yourLat, yourLon]);
     youMarker.setOpacity(1);
 
+    if (mbYouMarker) mbYouMarker.setLngLat([yourLon, yourLat]);
+
     if (lastLat !== null) maybeReroute();
   }, err => {
     setRouteStatus('error', 'YOUR LOCATION UNAVAILABLE');
@@ -1035,6 +1175,9 @@ function updateCarPosition(lat, lon, mph, acc, msg) {
   if (msg && msg.heading !== null && msg.heading !== undefined) {
     updateMapBearing(msg.heading);
   }
+
+
+  updateMapboxCar(lat, lon, msg?.heading ?? null);
 
   pingsRx++;
   document.getElementById('fPings').textContent = 'PINGS: ' + pingsRx;
