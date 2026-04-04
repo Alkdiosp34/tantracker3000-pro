@@ -869,9 +869,21 @@ let mbMap = null;
 let mbCarMarker = null;
 let mbYouMarker = null;
 let mbNavActive = false;
+let mbLoaded = false;
 
-function initMapbox() {
-  if (mbMap) return;
+function initMapbox(onReady) {
+  if (mbMap && mbLoaded) {
+
+    mbMap.resize();
+    if (onReady) onReady();
+    return;
+  }
+  if (mbMap && !mbLoaded) {
+
+    mbMap.once('load', () => { mbMap.resize(); if (onReady) onReady(); });
+    return;
+  }
+
   mapboxgl.accessToken = MAPBOX_TOKEN;
   mbMap = new mapboxgl.Map({
     container: 'mapbox',
@@ -884,6 +896,8 @@ function initMapbox() {
   });
 
   mbMap.on('load', () => {
+    mbLoaded = true;
+
 
     const carEl = document.createElement('div');
     carEl.innerHTML = `<div style="width:32px;height:32px;position:relative;">
@@ -912,36 +926,31 @@ function initMapbox() {
 
     if (lastLat !== null) mbCarMarker.setLngLat([lastLon, lastLat]);
     if (yourLat !== null) mbYouMarker.setLngLat([yourLon, yourLat]);
+
+    mbMap.resize();
+    if (onReady) onReady();
   });
 }
 
 function startNavMode() {
   mbNavActive = true;
   document.getElementById('mapbox').classList.add('active');
-  setTimeout(() => {
-    initMapbox();
-    if (mbMap) {
-      mbMap.resize();
 
-      if (mbMap.loaded()) {
-        if (lastLat !== null) mbMap.jumpTo({ center: [lastLon, lastLat], zoom: 16, pitch: 60, bearing: yourHeading || 0 });
-      } else {
+  initMapbox(() => {
 
-        mbMap.once('load', () => {
-          if (lastLat !== null) mbMap.jumpTo({ center: [lastLon, lastLat], zoom: 16, pitch: 60, bearing: yourHeading || 0 });
-        });
-      }
+    if (lastLat !== null) {
+      mbMap.jumpTo({ center: [lastLon, lastLat], zoom: 16, pitch: 60, bearing: yourHeading || 0 });
     }
 
     if (typeof DeviceOrientationEvent !== 'undefined' &&
         typeof DeviceOrientationEvent.requestPermission === 'function') {
       DeviceOrientationEvent.requestPermission()
         .then(state => { if (state === 'granted') listenCompass(); })
-        .catch(() => showAlert('COMPASS PERMISSION DENIED'));
+        .catch(() => listenCompass());
     } else {
       listenCompass();
     }
-  }, 50);
+  });
 }
 
 function stopNavMode() {
