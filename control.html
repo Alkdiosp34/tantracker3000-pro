@@ -562,7 +562,7 @@ body.text-lg footer { font-size:12px; }
 <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate-src.js"></script>
 <script>
 
-const WS_URL = 'wss://tantracker3000-pro1.onrender.com';
+const WS_URL = 'wss://tantracker3000-pro.onrender.com';
 const CLIENT_TOKEN = new URLSearchParams(window.location.search).get('token') || 'tt3k-6b013c92cface5653bcd4485';
 
 const SESSION_DAYS = 60;
@@ -1346,7 +1346,7 @@ setInterval(() => {
   document.getElementById('fTime').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
 }, 1000);
 
-const SERVER_URL = 'https://tantracker3000-pro1.onrender.com';
+const SERVER_URL = 'https://tantracker3000-pro.onrender.com';
 let historyTrail = null;
 let historyData = [];
 
