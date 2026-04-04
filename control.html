@@ -32,7 +32,6 @@ content:''; position:fixed; inset:0;
 background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px);
 pointer-events:none; z-index:9999;
 }
-/* LOGIN */
 #loginScreen {
 position:fixed; inset:0; z-index:5000; background:#000;
 display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px;
@@ -54,7 +53,6 @@ display:flex; align-items:center; justify-content:center; transition:background 
 .key.del { font-size:16px; color:#ff6666; }
 .key.empty { visibility:hidden; }
 .login-error { font-size:11px; color:var(--red); height:16px; letter-spacing:1px; }
-/* HEADER */
 header {
 background:var(--panel); border-bottom:1px solid var(--border);
 padding:10px 16px; display:flex; align-items:center; justify-content:space-between;
@@ -68,7 +66,6 @@ flex-shrink:0; gap:12px;
 .dot.warn { background:var(--amber); }
 .dot.off { background:var(--red); }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-/* ETA BADGE in header */
 .eta-badge {
 display:none; align-items:center; gap:8px;
 background:#060d06; border:1px solid var(--border);
@@ -77,13 +74,11 @@ border-radius:4px; padding:4px 10px;
 .eta-badge.show { display:flex; }
 .eta-time { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:20px; color:var(--amber); }
 .eta-meta { font-size:9px; color:var(--muted); line-height:1.4; }
-/* LAYOUT */
 .app-body { flex:1; display:grid; grid-template-columns:300px 1fr; overflow:hidden; }
 @media (max-width:700px) {
 .app-body { grid-template-columns:1fr; grid-template-rows:auto 1fr; }
 .sidebar { max-height:260px; overflow-y:auto; }
 }
-/* SIDEBAR */
 .sidebar {
 background:var(--panel); border-right:1px solid var(--border);
 display:flex; flex-direction:column; overflow:hidden;
@@ -105,12 +100,10 @@ transition:all 0.15s;
 font-size:10px; letter-spacing:2px; color:#cce8d0; font-weight:700;
 text-transform:uppercase; margin-bottom:2px;
 }
-/* TELEMETRY */
 .telem-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
 .telem-cell { background:#060d06; border:1px solid var(--border); border-radius:3px; padding:8px; }
 .telem-label { font-size:9px; color:#8ab89a; margin-bottom:2px; letter-spacing:1px; }
 .telem-val { font-size:14px; color:var(--amber); font-weight:700; }
-/* DIRECTIONS PANEL */
 .directions-header {
 background:#060d06; border:1px solid var(--border); border-radius:4px;
 padding:10px; display:flex; flex-direction:column; gap:4px;
@@ -131,7 +124,6 @@ background:#060d06; border:1px solid var(--border); color:var(--muted);
 .route-status.active { color:var(--green); border-color:#1a4a1a; }
 .route-status.error { color:var(--red); border-color:#3a1111; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
-/* TURN BY TURN */
 .turns-list { display:flex; flex-direction:column; gap:4px; }
 .turn-item {
 background:#060d06; border:1px solid var(--border); border-radius:3px;
@@ -147,7 +139,6 @@ font-size:14px; flex-shrink:0;
 }
 .turn-text { font-size:12px; color:var(--bright); line-height:1.5; flex:1; font-weight:500; }
 .turn-dist { font-size:10px; color:#8ab89a; margin-top:2px; }
-/* BUTTONS */
 .btn-group { display:flex; flex-direction:column; gap:6px; }
 .cmd-btn {
 width:100%; padding:12px; background:#060d06; border:1px solid var(--border);
@@ -161,12 +152,10 @@ letter-spacing:1px; transition:all 0.15s; text-align:left; color:var(--bright);
 .cmd-btn.danger:hover { background:#1a0505; border-color:var(--red); }
 .cmd-btn.active-track { border-color:var(--blue); color:#88aaff; }
 .btn-icon { font-size:16px; width:20px; text-align:center; }
-/* MAP */
 .map-area { position:relative; overflow:hidden; }
 #map { width:100%; height:100%; background:#0a0f0a; }
 .leaflet-tile { filter:invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.7); }
 .leaflet-control-attribution { display:none; }
-/* MAP OVERLAY CONTROLS */
 .map-overlay {
 position:absolute; top:10px; right:10px; z-index:1000;
 display:flex; flex-direction:column; gap:6px;
@@ -178,7 +167,6 @@ color:var(--text); cursor:pointer; letter-spacing:1px; white-space:nowrap;
 }
 .map-btn:hover { border-color:var(--green); color:var(--bright); }
 .map-btn.active { border-color:var(--blue); color:#88aaff; }
-/* SPEED INDICATOR on map */
 .speed-overlay {
 position:absolute; bottom:40px; right:10px; z-index:1000;
 background:var(--panel); border:1px solid var(--border); border-radius:4px;
@@ -187,7 +175,6 @@ padding:8px 12px; text-align:center; display:none;
 .speed-overlay.show { display:block; }
 .speed-num { font-family:'Rajdhani',sans-serif; font-weight:700; font-size:26px; color:var(--amber); }
 .speed-unit { font-size:9px; color:var(--muted); letter-spacing:1px; }
-/* REROUTE FLASH */
 .reroute-toast {
 position:absolute; top:10px; left:50%; transform:translateX(-50%);
 z-index:1001; background:#0d0a00; border:1px solid var(--amber);
@@ -195,7 +182,6 @@ border-radius:4px; padding:6px 14px; font-size:11px; color:var(--amber);
 letter-spacing:1px; opacity:0; transition:opacity 0.3s; pointer-events:none;
 }
 .reroute-toast.show { opacity:1; }
-/* NO SIGNAL */
 .no-signal {
 position:absolute; inset:0; display:flex; flex-direction:column;
 align-items:center; justify-content:center; z-index:500;
@@ -203,14 +189,12 @@ background:rgba(8,13,8,0.7); gap:8px; pointer-events:none;
 }
 .no-signal.hidden { display:none; }
 .no-signal-text { font-size:12px; color:#8ab89a; letter-spacing:2px; }
-/* FOOTER */
 footer {
 background:var(--panel); border-top:1px solid var(--border);
 padding:6px 16px; display:flex; justify-content:space-between;
 font-size:10px; color:var(--muted); flex-shrink:0; letter-spacing:1px;
 }
 .last-update { color:var(--text); }
-/* VOLTAGE BANNER */
 .volt-banner {
 display:none; position:fixed; bottom:40px; left:50%; transform:translateX(-50%);
 z-index:2000; border-radius:4px; padding:10px 20px; font-size:12px;
@@ -221,8 +205,7 @@ font-family:'Share Tech Mono',monospace;
 .volt-banner.warn { background:#1a1000; border:1px solid var(--amber); color:var(--amber); }
 .volt-banner.crit { background:#1a0505; border:1px solid var(--red); color:var(--red); animation:slide-up 0.3s ease, blink-r 0.8s infinite; }
 @keyframes slide-up { from{transform:translateX(-50%) translateY(20px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
-@keyframes blink-r { 0%,100%{opacity:1} 50%{opacity:0.5} }
-/* LEGEND */
+@keyframes blink-r  { 0%,100%{opacity:1} 50%{opacity:0.5} }
 .legend {
 position:absolute; bottom:40px; left:10px; z-index:1000;
 background:var(--panel); border:1px solid var(--border); border-radius:4px;
@@ -230,7 +213,6 @@ padding:8px 10px; display:flex; flex-direction:column; gap:5px;
 }
 .legend-item { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--muted); }
 .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-/* MAP SELECTION TOAST */
 #mapToast {
 position:absolute; top:50%; left:50%;
 transform:translate(-50%,-50%);
@@ -241,7 +223,6 @@ font-size:22px; letter-spacing:3px; padding:12px 28px; border-radius:6px;
 white-space:nowrap; opacity:0; transition:opacity 0.35s ease;
 }
 #mapToast.show { opacity:1; transition:none; }
-/* FONT SIZE TOGGLE */
 body.text-lg { font-size: 115%; }
 body.text-lg .telem-val { font-size:18px; }
 body.text-lg .telem-label { font-size:11px; }
@@ -251,7 +232,6 @@ body.text-lg .sidebar-tabs button { font-size:13px; }
 body.text-lg .turn-text { font-size:14px; }
 body.text-lg .turn-dist { font-size:12px; }
 body.text-lg footer { font-size:12px; }
-/* UX IMPROVEMENTS — bolder, more readable */
 .telem-val { font-size:15px; color:var(--amber); font-weight:700; }
 .telem-label { font-size:10px; color:#aad8b0; margin-bottom:3px; letter-spacing:1px; font-weight:700; }
 .section-label { font-size:11px; letter-spacing:2px; color:#cce8d0; font-weight:700; padding:4px 0 2px 0; }
@@ -582,10 +562,10 @@ body.text-lg footer { font-size:12px; }
 <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate-src.js"></script>
 <script>
 
-const WS_URL = 'wss:
-const CLIENT_TOKEN = new URLSearchParams(window.location.search).get('token') || 'tt3k-6b013c92cface5653bcd4485'; 
+const WS_URL = 'wss://tantracker3000-pro1.onrender.com';
+const CLIENT_TOKEN = new URLSearchParams(window.location.search).get('token') || 'tt3k-6b013c92cface5653bcd4485';
 
-const SESSION_DAYS = 60; 
+const SESSION_DAYS = 60;
 const SESSION_MS = SESSION_DAYS * 24 * 60 * 60 * 1000;
 const SESSION_KEY = () => 'tt3k_session_' + CLIENT_TOKEN;
 
@@ -600,20 +580,20 @@ function sessionValid() {
   return s && (Date.now() - s.ts) < SESSION_MS;
 }
 function touchSession() {
-  
+
   if (sessionValid()) saveSession();
 }
 
 let sppin = '';
 let spConfirm = '';
-let spPhase = 'set'; 
+let spPhase = 'set';
 
 function spkey(d) {
   if (sppin.length >= 5) return;
   sppin += d;
   spupdate();
   if (sppin.length === 5 && spPhase === 'set') {
-    
+
     window._spFirst = sppin;
     setTimeout(() => { spPhase = 'confirm'; sppin = ''; spupdate(); document.getElementById('setPinLabel').textContent = 'CONFIRM YOUR PIN'; }, 300);
   } else if (sppin.length === 5 && spPhase === 'confirm') {
@@ -625,7 +605,7 @@ function spupdate() {
   for (let i=0;i<5;i++) document.getElementById('sp'+i).classList.toggle('filled', i < sppin.length);
 }
 async function spcheck() {
-  
+
   if (sppin !== window._spFirst) {
     document.getElementById('setPinError').textContent = 'PINs do not match — try again';
     spPhase = 'set'; sppin = ''; window._spFirst = '';
@@ -634,7 +614,7 @@ async function spcheck() {
     return;
   }
 
-  
+
   try {
     document.getElementById('setPinError').textContent = 'SAVING...';
     const res = await fetch(SERVER_URL + '/pin/set', {
@@ -644,7 +624,7 @@ async function spcheck() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Failed to set PIN');
-    
+
     saveSession();
     document.getElementById('setPinScreen').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'none';
@@ -673,7 +653,7 @@ async function showForgotPin() {
   } catch(e) { document.getElementById('loginError').textContent = 'Connection error'; }
 }
 
-const HERE_API_KEY = ''; 
+const HERE_API_KEY = '';
 
 const REROUTE_INTERVAL = 10;
 
@@ -697,8 +677,8 @@ function lupdate() {
     document.getElementById('lp'+i).classList.toggle('filled', i < lpin.length);
 }
 async function lcheck() {
-  
-  
+
+
   if (sessionValid()) {
     touchSession();
     document.getElementById('loginScreen').style.display = 'none';
@@ -717,7 +697,7 @@ async function lcheck() {
       document.getElementById('loginScreen').style.display = 'none';
       initApp();
     } else if (data.error === 'no_pin') {
-      
+
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('setPinScreen').style.display = 'flex';
     } else {
@@ -726,7 +706,7 @@ async function lcheck() {
       setTimeout(() => document.getElementById('loginError').textContent = '', 2000);
     }
   } catch(e) {
-    
+
     const r2 = await fetch(SERVER_URL + '/pin/exists?token=' + CLIENT_TOKEN).catch(() => null);
     if (r2) {
       const d2 = await r2.json().catch(() => ({}));
@@ -752,19 +732,19 @@ function switchTab(t) {
 const TILE_LAYERS = [
   {
     name: 'DARK',
-    url: 'https:
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     opts: { maxZoom:19, subdomains:'abcd' },
     filter: 'invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.7)'
   },
   {
     name: 'SATELLITE',
-    url: 'https:
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     opts: { maxZoom:19 },
     filter: 'none'
   },
   {
     name: 'TOPO',
-    url: 'https:
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
     opts: { maxZoom:17, subdomains:'abc' },
     filter: 'none'
   }
@@ -831,10 +811,10 @@ function showMapToast(text) {
   if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
   el.textContent = text;
   el.classList.add('show');
-  
+
   void el.offsetWidth;
   el.classList.remove('show');
-  
+
   toastTimer = setTimeout(() => {
     el.style.transition = 'opacity 0.5s ease';
     el.style.opacity = '0';
@@ -843,7 +823,7 @@ function showMapToast(text) {
       el.style.opacity = '';
     }, 500);
   }, 500);
-  
+
   el.style.opacity = '1';
 }
 
@@ -863,10 +843,10 @@ function toggleTextSize() {
 applyTextSize();
 
 function startFollowMe() {
-  
+
   if (typeof DeviceOrientationEvent !== 'undefined' &&
       typeof DeviceOrientationEvent.requestPermission === 'function') {
-    
+
     DeviceOrientationEvent.requestPermission()
       .then(state => { if (state === 'granted') listenCompass(); })
       .catch(() => showAlert('Compass permission denied', 'warn'));
@@ -882,14 +862,14 @@ function listenCompass() {
 
 function onCompass(e) {
   if (orientMode !== 2) return;
-  
+
   const heading = e.webkitCompassHeading != null
     ? e.webkitCompassHeading
     : e.absolute ? (360 - (e.alpha || 0)) : null;
   if (heading === null) return;
   yourHeading = heading;
   map.setBearing(heading);
-  
+
   if (yourLat !== null) map.setView([yourLat, yourLon], map.getZoom(), { animate: false });
 }
 
@@ -903,7 +883,7 @@ function updateMapBearing(heading) {
   if (heading === null || heading === undefined) return;
   lastHeading = heading;
   if (orientMode === 1) map.setBearing(heading);
-  
+
   updateCarIcon(heading);
 }
 
@@ -929,17 +909,17 @@ function updateCarIcon(heading) {
 }
 
 function initMap() {
-  
+
   const hasRotate = typeof L.Map.prototype.setBearing === 'function';
 
   map = L.map('map', { zoomControl:false, attributionControl:false, rotate: hasRotate }).setView([29.76, -95.36], 13);
 
-  
+
   const savedLayer = localStorage.getItem('tt3k_maplayer');
   if (savedLayer !== null) currentLayerIdx = parseInt(savedLayer) || 0;
   const savedOrient = localStorage.getItem('tt3k_orient');
   if (savedOrient !== null) orientMode = parseInt(savedOrient) || 0;
-  
+
   const oMode = ORIENT_MODES[orientMode];
   const orientBtn = document.getElementById('btnNorthUp');
   if (orientBtn) {
@@ -950,7 +930,7 @@ function initMap() {
   if (orientMode === 2) startFollowMe();
   applyMapLayer();
 
-  
+
   const carIcon = L.divIcon({
     html: `<div style="position:relative;width:20px;height:20px;">
       <div style="position:absolute;inset:0;border-radius:50%;background:#00ff88;opacity:0.25;animation:ripple 2s infinite"></div>
@@ -962,7 +942,7 @@ function initMap() {
   carMarker = L.marker([29.76,-95.36], { icon:carIcon, zIndexOffset:1000 }).addTo(map);
   carMarker.setOpacity(0);
 
-  
+
   const youIcon = L.divIcon({
     html: `<div style="width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:16px solid #ffaa00;filter:drop-shadow(0 0 4px #ffaa00)"></div>`,
     iconSize:[16,16], iconAnchor:[8,16], className:''
@@ -971,13 +951,13 @@ function initMap() {
   youMarker.setOpacity(0);
   youMarker.bindTooltip('YOU', { permanent:true, direction:'top', offset:[0,-16], className:'you-label' });
 
-  
+
   routeLine = L.polyline([], {
     color:'#00aaff', weight:5, opacity:0.85,
     dashArray:null, lineJoin:'round', lineCap:'round'
   }).addTo(map);
 
-  
+
   const s = document.createElement('style');
   s.textContent = `.you-label { background:transparent; border:none; box-shadow:none; font-family:'Share Tech Mono',monospace; font-size:9px; color:#ffaa00; letter-spacing:1px; white-space:nowrap; }
   .you-label::before { display:none; }
@@ -996,7 +976,7 @@ function startYourLocation() {
     yourLon = pos.coords.longitude;
     youMarker.setLatLng([yourLat, yourLon]);
     youMarker.setOpacity(1);
-    
+
     if (lastLat !== null) maybeReroute();
   }, err => {
     setRouteStatus('error', 'YOUR LOCATION UNAVAILABLE');
@@ -1011,7 +991,7 @@ function updateCarPosition(lat, lon, mph, acc, msg) {
   document.getElementById('speedOverlay').classList.add('show');
   document.getElementById('speedNum').textContent = mph;
 
-  
+
   const gmBtn = document.getElementById('btnGmaps');
   gmBtn.style.opacity = '1'; gmBtn.style.cursor = 'pointer';
 
@@ -1019,14 +999,14 @@ function updateCarPosition(lat, lon, mph, acc, msg) {
   document.getElementById('dLon').textContent = lon.toFixed(5);
   document.getElementById('dSpd').textContent = mph + ' mph';
   document.getElementById('dAcc').textContent = '±' + Math.round(acc * 3.28084) + ' ft';
-  
+
   const movEl = document.getElementById('dMoving');
   if (movEl) {
     movEl.textContent = (msg && msg.moving) ? '▶ MOVING' : '■ PARKED';
     movEl.style.color = (msg && msg.moving) ? 'var(--green)' : 'var(--amber)';
   }
 
-  
+
   if (msg && msg.heading !== null && msg.heading !== undefined) {
     updateMapBearing(msg.heading);
   }
@@ -1037,7 +1017,7 @@ function updateCarPosition(lat, lon, mph, acc, msg) {
   if (rateEl) rateEl.textContent = (msg && msg.moving) ? 'EVERY 15s' : 'EVERY 2m';
   document.getElementById('lastSeen').textContent = 'LAST UPDATE: ' + new Date().toLocaleTimeString('en-US',{hour12:false});
 
-  
+
   if (autoFollow) {
     if (yourLat !== null) {
       fitBothOnMap(true);
@@ -1046,20 +1026,20 @@ function updateCarPosition(lat, lon, mph, acc, msg) {
     }
   }
 
-  
+
   maybeReroute();
 }
 
 function maybeReroute() {
   if (yourLat === null || lastLat === null) return;
 
-  
+
   if (lastRoutedCarLat !== null) {
     const moved = haversine(lastLat, lastLon, lastRoutedCarLat, lastRoutedCarLon);
     if (moved < REROUTE_THRESHOLD) return;
   }
 
-  
+
   clearTimeout(routeTimer);
   routeTimer = setTimeout(fetchRoute, 800);
 }
@@ -1096,7 +1076,7 @@ async function fetchRoute() {
 }
 
 async function fetchOSRMRoute() {
-  const url = `https:
+  const url = `https://router.project-osrm.org/route/v1/driving/${yourLon},${yourLat};${lastLon},${lastLat}?overview=full&geometries=geojson&steps=true&annotations=false`;
   const r = await fetch(url);
   const d = await r.json();
   if (d.code !== 'Ok' || !d.routes.length) return null;
@@ -1123,7 +1103,7 @@ function extractOSRMSteps(steps) {
 }
 
 async function fetchHereRoute() {
-  const url = `https:
+  const url = `https://router.hereapi.com/v8/routes?transportMode=car&origin=${yourLat},${yourLon}&destination=${lastLat},${lastLon}&return=polyline,summary,actions,instructions&departureTime=now&apiKey=${HERE_API_KEY}`;
   const r = await fetch(url);
   const d = await r.json();
   if (!d.routes || !d.routes.length) return null;
@@ -1132,7 +1112,7 @@ async function fetchHereRoute() {
   const section = route.sections[0];
   const summary = section.summary;
 
-  
+
   const coords = decodeHerePolyline(section.polyline);
   const distMi = (summary.length * 0.000621371).toFixed(1);
   const mins = Math.round(summary.duration / 60);
@@ -1209,7 +1189,7 @@ function updateDirectionsPanel(result) {
         <div class="turn-dist">${step.dist}</div>
       </div>`;
     list.appendChild(div);
-    
+
     if (i === 0) speakDirection(step.text);
   });
 }
@@ -1290,8 +1270,8 @@ function hereActionIcon(action, dir) {
 function openGoogleMaps() {
   if (lastLat === null) return;
   const url = yourLat !== null
-    ? `https:
-    : `https:
+    ? `https://www.google.com/maps/dir/${yourLat},${yourLon}/${lastLat},${lastLon}`
+    : `https://www.google.com/maps?q=${lastLat},${lastLon}`;
   window.open(url, '_blank');
 }
 
@@ -1333,14 +1313,14 @@ function handleVoltageAlert(msg) {
   const level = msg.level;
   const v = msg.voltage != null ? parseFloat(msg.voltage).toFixed(1) : '--';
   let text, cls;
-  
+
   if (level === 'warning')       { text = '⚠ CAR BATTERY: ' + v + 'V — DRAINING'; cls = 'warn'; }
   if (level === 'low')           { text = '⚠ CAR BATTERY LOW: ' + v + 'V — LVD CUTOFF SOON'; cls = 'crit'; }
   if (level === 'lvd_cutoff')    { text = '⚡ LVD TRIPPED AT ' + v + 'V — DEVICE NOW ON PHONE BATTERY'; cls = 'crit'; }
   if (level === 'power_restored'){ text = '✓ CAR POWER RESTORED — CHARGING RESUMED'; cls = 'warn'; }
   if (level === 'power_lost')    { text = '⚡ CAR POWER LOST — DEVICE ON PHONE BATTERY'; cls = 'crit'; }
   if (level === 'device_revived'){ text = '✓ DEVICE REVIVED — CHARGING DETECTED, RESUMING'; cls = 'warn'; }
-  
+
   if (level === 'phone_warning') { text = '⚠ PHONE BATTERY LOW: ' + v + '% — TRACKING CONTINUES'; cls = 'warn'; }
   if (level === 'phone_low')     { text = '⚠ PHONE BATTERY ' + v + '% — FINAL PING SENT'; cls = 'crit'; }
   if (level === 'phone_critical'){ text = '🔴 PHONE BATTERY CRITICAL: ' + v + '% — DEVICE SHUTTING DOWN'; cls = 'crit'; }
@@ -1348,7 +1328,7 @@ function handleVoltageAlert(msg) {
 }
 
 function handleFinalPing(msg) {
-  
+
   updateCarPosition(msg.lat, msg.lon, msg.mph || 0, Math.round(msg.acc || 0));
   showVoltBanner('🔴 FINAL PING RECEIVED — DEVICE POWERING DOWN', 'crit');
 }
@@ -1358,7 +1338,7 @@ function showVoltBanner(text, cls) {
   if (!el) return;
   el.textContent = text;
   el.className = 'volt-banner show ' + cls;
-  
+
   if (cls !== 'crit') setTimeout(() => el.classList.remove('show'), 8000);
 }
 
@@ -1366,7 +1346,7 @@ setInterval(() => {
   document.getElementById('fTime').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
 }, 1000);
 
-const SERVER_URL = 'https:
+const SERVER_URL = 'https://tantracker3000-pro1.onrender.com';
 let historyTrail = null;
 let historyData = [];
 
@@ -1388,14 +1368,14 @@ async function loadHistory(days) {
       return;
     }
 
-    
+
     document.getElementById('hPings').textContent = historyData.length.toLocaleString();
     document.getElementById('hDays').textContent = days;
     document.getElementById('hFirst').textContent = new Date(historyData[0].ts).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
     document.getElementById('hLast').textContent = new Date(historyData[historyData.length-1].ts).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
     document.getElementById('hStatus').textContent = `Showing ${historyData.length.toLocaleString()} pings over ${days} days.`;
 
-    
+
     drawHistoryTrail(historyData);
 
   } catch(e) {
@@ -1404,13 +1384,13 @@ async function loadHistory(days) {
 }
 
 function drawHistoryTrail(pings) {
-  
+
   if (historyTrail) { map.removeLayer(historyTrail); historyTrail = null; }
 
   const coords = pings.map(p => [p.lat, p.lon]);
   if (coords.length < 2) return;
 
-  
+
   historyTrail = L.polyline(coords, {
     color: '#ffaa00',
     weight: 2,
@@ -1418,7 +1398,7 @@ function drawHistoryTrail(pings) {
     dashArray: '4 4'
   }).addTo(map);
 
-  
+
   const startIcon = L.divIcon({
     html: `<div style="width:10px;height:10px;background:#ffaa00;border-radius:50%;border:2px solid #080d08;"></div>`,
     iconSize:[10,10], iconAnchor:[5,5], className:''
@@ -1435,7 +1415,7 @@ function drawHistoryTrail(pings) {
     .bindTooltip('End: ' + new Date(pings[pings.length-1].ts).toLocaleString(), { direction:'top' })
     .addTo(map);
 
-  
+
   map.fitBounds(historyTrail.getBounds(), { padding:[30,30] });
 }
 
@@ -1474,7 +1454,7 @@ function exportHistory() {
 }
 
 function showChangePinFlow() {
-  
+
   document.getElementById('setPinScreen').style.display = 'flex';
   document.getElementById('setPinLabel').textContent = 'ENTER CURRENT PIN';
   spPhase = 'current'; sppin = ''; spupdate();
@@ -1503,9 +1483,9 @@ async function initiateTransfer() {
     const url = data.transfer_url;
     document.getElementById('transferUrl').textContent = url;
 
-    
+
     const qrDiv = document.getElementById('transferQr');
-    const qrUrl = 'https:
+    const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(url);
     qrDiv.innerHTML = `<img src="${qrUrl}" style="border-radius:4px;border:2px solid #331a00;" width="160" height="160">`;
 
     document.getElementById('transferResult').style.display = 'block';
@@ -1571,7 +1551,7 @@ function toggleVoice() {
   }
   if (voiceEnabled && !voiceReady) initVoice();
   if (voiceEnabled) {
-    lastSpokenInstruction = ''; 
+    lastSpokenInstruction = '';
     speakDirection('Voice navigation enabled.');
   }
 }
@@ -1669,7 +1649,7 @@ function initApp() {
     startYourLocation();
     showInstallPrompt();
     if (voiceEnabled) initVoice();
-    
+
     const vb = document.getElementById('voiceToggle');
     if (vb && voiceEnabled) { vb.classList.add('active-track'); vb.innerHTML = '<span class="btn-icon">\u{1F50A}</span> VOICE ON'; }
   } else {
@@ -1689,7 +1669,7 @@ window.addEventListener('beforeinstallprompt', e => {
 });
 
 function showInstallPrompt() {
-  
+
   if (window.matchMedia('(display-mode: standalone)').matches) return;
   if (localStorage.getItem('tt3k_install_dismissed')) return;
   if (!deferredPrompt && !/iPhone|iPad|iPod/.test(navigator.userAgent)) return;
@@ -1708,7 +1688,7 @@ function showInstallPrompt() {
         <button onclick="dismissInstall()" style="background:none;border:none;color:var(--muted);font-size:9px;cursor:pointer;">dismiss</button>
       </div>`;
     document.body.appendChild(banner);
-  }, 10000); 
+  }, 10000);
 }
 
 async function installApp() {
@@ -1717,7 +1697,7 @@ async function installApp() {
     const result = await deferredPrompt.userChoice;
     deferredPrompt = null;
   } else {
-    
+
     alert('To install:\n1. Tap the Share button (□↑) at the bottom\n2. Tap "Add to Home Screen"\n3. Tap "Add"');
   }
   dismissInstall();
@@ -1789,7 +1769,7 @@ async function submitVerifyCode() {
       document.getElementById('verifyCodeInput').value = '';
       return;
     }
-    
+
     document.getElementById('verifyScreen').style.display = 'none';
     document.getElementById('setPinScreen').style.display = 'flex';
     document.getElementById('setPinLabel').textContent = 'CHOOSE A 5-DIGIT PIN';
@@ -1819,7 +1799,7 @@ function showVerifyLocked(minutes) {
   const params = new URLSearchParams(window.location.search);
   const resetCode = params.get('reset');
 
-  
+
   if (resetCode) {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('setPinScreen').style.display = 'flex';
@@ -1828,15 +1808,15 @@ function showVerifyLocked(minutes) {
     return;
   }
 
-  
+
   if (sessionValid()) {
-    touchSession(); 
+    touchSession();
     document.getElementById('loginScreen').style.display = 'none';
     initApp();
     return;
   }
 
-  
+
   try {
     const r = await fetch(SERVER_URL + '/pin/exists?token=' + CLIENT_TOKEN);
     const d = await r.json();
@@ -1847,15 +1827,15 @@ function showVerifyLocked(minutes) {
     }
 
     if (!d.exists) {
-      
-      
+
+
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('verifyScreen').style.display = 'flex';
       return;
     }
 
     if (d.pin_empty) {
-      
+
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('setPinScreen').style.display = 'flex';
       document.getElementById('setPinLabel').textContent = 'CHOOSE A 5-DIGIT PIN';
@@ -1865,8 +1845,8 @@ function showVerifyLocked(minutes) {
     console.log('[pin] Could not check PIN status:', e.message);
   }
 
-  
-  
+
+
 })();
 
 const _origSpcheck = spcheck;
