@@ -546,10 +546,11 @@ body.text-xl .btn-icon { font-size:22px; width:26px; }
     </div>
 
     <div class="map-overlay">
-      <button class="map-btn" onclick="orientMode===1 ? mbMap.zoomIn() : map.zoomIn()">＋</button>
-      <button class="map-btn" onclick="orientMode===1 ? mbMap.zoomOut() : map.zoomOut()">－</button>
+      <button class="map-btn" onclick="orientMode===1 && !mode3D ? mbMap?.zoomIn() : map.zoomIn()">＋</button>
+      <button class="map-btn" onclick="orientMode===1 && !mode3D ? mbMap?.zoomOut() : map.zoomOut()">－</button>
       <button class="map-btn" id="btnMapLayer" onclick="cycleMapLayer()" title="Change map style">🗺</button>
       <button class="map-btn" id="btnNorthUp" onclick="cycleOrientation()" title="North up">⬆</button>
+      <button class="map-btn" id="btn3D" onclick="toggle3D()" title="3D Navigation Mode" style="font-weight:700;letter-spacing:1px;">3D</button>
       <button class="map-btn" id="btnTextSize" onclick="toggleTextSize()" title="Text size" style="font-weight:700;color:#fff;">Aa</button>
     </div>
     <div id="mapToast"></div>
@@ -812,7 +813,11 @@ function applyMapLayer() {
   if (btn) btn.textContent = ['🌑','🛰','🗻'][currentLayerIdx];
 }
 
+let mode3D = false;
+
 function cycleOrientation() {
+
+  if (mode3D) { toggle3D(); return; }
   orientMode = (orientMode + 1) % 2;
   const btn = document.getElementById('btnNorthUp');
   const mode = ORIENT_MODES[orientMode];
@@ -823,9 +828,40 @@ function cycleOrientation() {
   showMapToast(mode.label);
 
   if (orientMode === 0) {
-    stopNavMode();
+
+    stopFollowMe();
+    map.setBearing(0);
   } else {
+
+    startLeafletCompass();
+  }
+}
+
+function toggle3D() {
+  mode3D = !mode3D;
+  const btn = document.getElementById('btn3D');
+  btn.classList.toggle('active', mode3D);
+  showMapToast(mode3D ? '3D MODE' : 'FLAT MAP');
+
+  if (mode3D) {
+
+    stopFollowMe();
     startNavMode();
+  } else {
+    stopNavMode();
+
+    if (orientMode === 1) startLeafletCompass();
+  }
+}
+
+function startLeafletCompass() {
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(state => { if (state === 'granted') listenCompass(); })
+      .catch(() => showAlert('COMPASS PERMISSION DENIED'));
+  } else {
+    listenCompass();
   }
 }
 
@@ -847,62 +883,71 @@ function initMapbox() {
     antialias: true
   });
 
-
-  const carEl = document.createElement('div');
-  carEl.innerHTML = `<div style="width:32px;height:32px;position:relative;">
-    <div style="position:absolute;inset:0;border-radius:50%;background:#00ff88;opacity:0.3;animation:ripple 2s infinite"></div>
-    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(0deg);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:28px solid #00ff88;filter:drop-shadow(0 0 8px #00ff88);" id="mbArrow"></div>
-  </div>`;
-  carEl.style.cssText = 'width:32px;height:32px;cursor:default;';
-  mbCarMarker = new mapboxgl.Marker({ element: carEl, rotationAlignment: 'map' })
-    .setLngLat([lastLon || -95.36, lastLat || 29.76])
-    .addTo(mbMap);
-  if (lastLat !== null) mbCarMarker.setLngLat([lastLon, lastLat]);
-
-
-  const youEl = document.createElement('div');
-  youEl.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#ffaa00;border:3px solid #fff;box-shadow:0 0 8px #ffaa00;';
-  mbYouMarker = new mapboxgl.Marker({ element: youEl })
-    .setLngLat([yourLon || -95.36, yourLat || 29.76])
-    .addTo(mbMap);
-  if (yourLat !== null) mbYouMarker.setLngLat([yourLon, yourLat]);
-
-
   mbMap.on('load', () => {
+
+    const carEl = document.createElement('div');
+    carEl.innerHTML = `<div style="width:32px;height:32px;position:relative;">
+      <div style="position:absolute;inset:0;border-radius:50%;background:#00ff88;opacity:0.3;animation:ripple 2s infinite"></div>
+      <div id="mbArrow" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:28px solid #00ff88;filter:drop-shadow(0 0 8px #00ff88);"></div>
+    </div>`;
+    carEl.style.cssText = 'width:32px;height:32px;cursor:default;';
+    mbCarMarker = new mapboxgl.Marker({ element: carEl, rotationAlignment: 'map' })
+      .setLngLat([lastLon || -95.36, lastLat || 29.76])
+      .addTo(mbMap);
+
+
+    const youEl = document.createElement('div');
+    youEl.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#ffaa00;border:3px solid #fff;box-shadow:0 0 8px #ffaa00;';
+    mbYouMarker = new mapboxgl.Marker({ element: youEl })
+      .setLngLat([yourLon || -95.36, yourLat || 29.76])
+      .addTo(mbMap);
+
+
     mbMap.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } } });
     mbMap.addLayer({ id: 'route', type: 'line', source: 'route',
       layout: { 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': '#00aaff', 'line-width': 5, 'line-opacity': 0.85 }
     });
+
+
+    if (lastLat !== null) mbCarMarker.setLngLat([lastLon, lastLat]);
+    if (yourLat !== null) mbYouMarker.setLngLat([yourLon, yourLat]);
   });
 }
 
 function startNavMode() {
   mbNavActive = true;
-  initMapbox();
-
   document.getElementById('mapbox').classList.add('active');
+  setTimeout(() => {
+    initMapbox();
+    if (mbMap) {
+      mbMap.resize();
 
-  if (lastLat !== null) {
-    mbMap.setCenter([lastLon, lastLat]);
-    mbCarMarker.setLngLat([lastLon, lastLat]);
-  }
+      if (mbMap.loaded()) {
+        if (lastLat !== null) mbMap.jumpTo({ center: [lastLon, lastLat], zoom: 16, pitch: 60, bearing: yourHeading || 0 });
+      } else {
 
-  if (typeof DeviceOrientationEvent !== 'undefined' &&
-      typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission()
-      .then(state => { if (state === 'granted') listenCompass(); })
-      .catch(() => showAlert('COMPASS PERMISSION DENIED'));
-  } else {
-    listenCompass();
-  }
+        mbMap.once('load', () => {
+          if (lastLat !== null) mbMap.jumpTo({ center: [lastLon, lastLat], zoom: 16, pitch: 60, bearing: yourHeading || 0 });
+        });
+      }
+    }
+
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission()
+        .then(state => { if (state === 'granted') listenCompass(); })
+        .catch(() => showAlert('COMPASS PERMISSION DENIED'));
+    } else {
+      listenCompass();
+    }
+  }, 50);
 }
 
 function stopNavMode() {
   mbNavActive = false;
   document.getElementById('mapbox').classList.remove('active');
   stopFollowMe();
-  map.setBearing(0);
 }
 
 function listenCompass() {
@@ -911,19 +956,23 @@ function listenCompass() {
 }
 
 function onCompass(e) {
-  if (!mbNavActive) return;
   const heading = e.webkitCompassHeading != null
     ? e.webkitCompassHeading
     : e.absolute ? (360 - (e.alpha || 0)) : null;
   if (heading === null) return;
   yourHeading = heading;
-  if (!mbMap) return;
 
-  mbMap.easeTo({ bearing: heading, pitch: 60, duration: 300, easing: t => t });
+  if (mode3D && mbMap) {
 
-  if (yourLat !== null) {
-    mbMap.setCenter([yourLon, yourLat]);
-    mbYouMarker.setLngLat([yourLon, yourLat]);
+    mbMap.easeTo({ bearing: heading, pitch: 60, duration: 300, easing: t => t });
+    if (yourLat !== null) {
+      mbMap.setCenter([yourLon, yourLat]);
+      if (mbYouMarker) mbYouMarker.setLngLat([yourLon, yourLat]);
+    }
+  } else if (orientMode === 1) {
+
+    map.setBearing(heading);
+    if (yourLat !== null) map.setView([yourLat, yourLon], map.getZoom(), { animate: false });
   }
 }
 
@@ -1090,7 +1139,7 @@ function initMap() {
     orientBtn.className = 'map-btn' + (oMode.cls ? ' ' + oMode.cls : '');
     orientBtn.title = oMode.label;
   }
-  if (orientMode === 1) startNavMode();
+  if (orientMode === 1) startLeafletCompass();
   applyMapLayer();
 
 
