@@ -305,6 +305,35 @@ async function createVehicle(data) {
   } catch(e) { console.error('[db] Create vehicle error:', e.message); return null; }
 }
 
+// ── ADMIN BRUTE FORCE PROTECTION ─────────────────────────────
+const adminFailedAttempts = new Map(); // ip → { count, lockedUntil }
+const ADMIN_MAX_ATTEMPTS = 10;
+const ADMIN_LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
+
+function isAdminLockedOut(ip) {
+  const entry = adminFailedAttempts.get(ip);
+  if (!entry) return false;
+  if (entry.lockedUntil && Date.now() < entry.lockedUntil) return true;
+  if (entry.lockedUntil && Date.now() >= entry.lockedUntil) {
+    adminFailedAttempts.delete(ip);
+  }
+  return false;
+}
+
+function recordAdminFailure(ip) {
+  const entry = adminFailedAttempts.get(ip) || { count: 0, lockedUntil: null };
+  entry.count++;
+  if (entry.count >= ADMIN_MAX_ATTEMPTS) {
+    entry.lockedUntil = Date.now() + ADMIN_LOCKOUT_MS;
+    console.warn(`[admin] IP ${ip} locked out after ${entry.count} failed attempts`);
+  }
+  adminFailedAttempts.set(ip, entry);
+}
+
+function recordAdminSuccess(ip) {
+  adminFailedAttempts.delete(ip);
+}
+
 // ── ADMIN AUTH ────────────────────────────────────────────────
 function isAdmin(req) {
   const key = req.headers['x-admin-key'] || new URL(req.url, 'http://localhost').searchParams.get('key');
@@ -386,6 +415,22 @@ function getRoom(token) {
   return rooms.get(token);
 }
 
+// ── BODY READER WITH SIZE LIMIT ───────────────────────────────
+const MAX_POST_BODY = 64 * 1024; // 64KB max for non-webhook POSTs
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '', size = 0;
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size > MAX_POST_BODY) { req.destroy(); reject(new Error('Payload too large')); return; }
+      body += chunk;
+    });
+    req.on('end', () => resolve(body));
+    req.on('error', reject);
+  });
+}
+
+
 // ── SIMPLE EMAIL HELPER ───────────────────────────────────────
 async function sendEmail(to, subject, html) {
   if (!process.env.RESEND_API_KEY) return false;
@@ -437,15 +482,42 @@ async function ensurePinRecord(token) {
 }
 
 // ── HTTP SERVER ───────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  'https://alkdiosp34.github.io',
+  'https://trackertex.com',
+  'https://www.trackertex.com'
+];
+
 const httpServer = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
+  const origin = req.headers['origin'] || '';
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   const cors = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Headers': 'Content-Type, x-admin-key',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Vary': 'Origin',
     'Content-Type': 'application/json'
   };
 
   if (req.method === 'OPTIONS') { res.writeHead(204, cors); res.end(); return; }
+
+  // ── ADMIN BRUTE FORCE CHECK ────────────────────────────────
+  const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || 'unknown';
+  if (url.pathname.startsWith('/admin/') || url.pathname.startsWith('/reactivate/initiate')) {
+    if (isAdminLockedOut(clientIp)) {
+      res.writeHead(429, cors);
+      res.end(JSON.stringify({ error: 'Too many failed attempts. Try again in 15 minutes.' }));
+      return;
+    }
+    if (!isAdmin(req)) {
+      recordAdminFailure(clientIp);
+      res.writeHead(401, cors);
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
+    recordAdminSuccess(clientIp);
+  }
 
   // ── STRIPE WEBHOOK ─────────────────────────────────────────
   if (url.pathname === '/webhook' && req.method === 'POST') {
@@ -585,6 +657,23 @@ const httpServer = http.createServer(async (req, res) => {
 
         console.log('[stripe] New vehicle registered, token:', token);
 
+        // Send welcome email with control panel link
+        if (token && session.customer_details?.email) {
+          const controlUrl = `${siteUrl}/control.html?token=${token}`;
+          const vehicleDesc = [fields.year, fields.make, fields.model].filter(Boolean).join(' ') || 'your vehicle';
+          sendEmail(session.customer_details.email, 'TexTrack — Your Tracker Is Active', `
+            <div style="font-family:sans-serif;background:#0c0c0c;color:#ccc;padding:32px;max-width:520px;">
+              <h2 style="color:#e09020;margin-bottom:4px;">TexTrack is Active</h2>
+              <p style="color:#888;font-size:13px;margin-bottom:24px;">Your GPS tracker has been set up for ${vehicleDesc}.</p>
+              <a href="${controlUrl}" style="display:inline-block;background:#e09020;color:#000;padding:14px 28px;text-decoration:none;font-weight:bold;font-size:16px;border-radius:4px;margin-bottom:24px;">Open Control Panel →</a>
+              <p style="font-size:12px;color:#555;margin-bottom:8px;">Bookmark that link — it's your permanent access to track this vehicle.</p>
+              <p style="font-size:12px;color:#555;">Need help? Reply to this email.</p>
+              <hr style="border:none;border-top:1px solid #222;margin:24px 0;">
+              <p style="font-size:11px;color:#444;">TexTrack · Houston, TX</p>
+            </div>
+          `);
+        }
+
         // Route $18 to installer using Stripe account ID
         if (installerStripeId && token) {
           try {
@@ -670,9 +759,7 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── RECOVERY MODE: START ────────────────────────────────────
   if (url.pathname === '/recovery/start' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.token || !(await isValidToken(data.token))) {
@@ -733,9 +820,7 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── RECOVERY MODE: STOP ─────────────────────────────────────
   if (url.pathname === '/recovery/stop' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.token) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token required' })); return; }
@@ -820,9 +905,7 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── PIN: SETUP REQUEST (send verification code to owner email) ─
   if (url.pathname === '/pin/setup/request' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.token || !data.email) {
@@ -890,9 +973,7 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── PIN: SETUP VERIFY (check the code) ──────────────────────
   if (url.pathname === '/pin/setup/verify' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.token || !data.code) {
@@ -948,9 +1029,7 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── PIN: SET ────────────────────────────────────────────────
   if (url.pathname === '/pin/set' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.token || !data.new_pin || data.new_pin.length !== 5) {
@@ -974,9 +1053,7 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── PIN: VERIFY (login) ─────────────────────────────────────
   if (url.pathname === '/pin/verify' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.token || !data.pin) {
@@ -1032,9 +1109,7 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── PIN: RESET REQUEST (send reset link to owner email) ─────
   if (url.pathname === '/pin/reset' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.token) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token required' })); return; }
@@ -1076,9 +1151,7 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── PIN: RESET VALIDATE (use reset code to set new PIN) ─────
   if (url.pathname === '/pin/reset/validate' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.token || !data.reset_code || !data.new_pin || data.new_pin.length !== 5) {
@@ -1108,9 +1181,7 @@ const httpServer = http.createServer(async (req, res) => {
   // ── ADMIN — RESET PIN (use admin key to clear a customer's PIN) ─
   if (url.pathname === '/admin/pin-reset' && req.method === 'POST') {
     if (!isAdmin(req)) { res.writeHead(401, cors); res.end(JSON.stringify({ error: 'Unauthorized' })); return; }
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.token) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token required' })); return; }
@@ -1149,9 +1220,7 @@ const httpServer = http.createServer(async (req, res) => {
   // ── ADMIN — ADD INSTALLER ────────────────────────────────────
   if (url.pathname === '/admin/installers' && req.method === 'POST') {
     if (!isAdmin(req)) { res.writeHead(401, cors); res.end(JSON.stringify({ error: 'Unauthorized' })); return; }
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         const account = await stripe.accounts.create({
@@ -1186,9 +1255,7 @@ const httpServer = http.createServer(async (req, res) => {
   // ── ADMIN — CREATE PAYMENT LINK FOR INSTALLER ────────────────
   if (url.pathname === '/admin/payment-link' && req.method === 'POST') {
     if (!isAdmin(req)) { res.writeHead(401, cors); res.end(JSON.stringify({ error: 'Unauthorized' })); return; }
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         const siteUrl = process.env.SITE_URL || 'https://alkdiosp34.github.io/tantracker3000-pro';
@@ -1236,9 +1303,7 @@ const httpServer = http.createServer(async (req, res) => {
   // ── REACTIVATE — Initiate reactivation (admin triggers, sends link to customer) ─
   if (url.pathname === '/reactivate/initiate' && req.method === 'POST') {
     if (!isAdmin(req)) { res.writeHead(401, cors); res.end(JSON.stringify({ error: 'Unauthorized' })); return; }
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.token) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Token required' })); return; }
@@ -1348,9 +1413,7 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── SIGN — Record TOS signature ──────────────────────────────
   if (url.pathname === '/sign' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       let data;
       try { data = JSON.parse(body); } catch(e) {
         res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Invalid JSON' })); return;
@@ -1458,9 +1521,7 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── ACCOUNT — Magic login ────────────────────────────────────
   if (url.pathname === '/account/login' && req.method === 'POST') {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', async () => {
+    readBody(req).then(async body => {
       try {
         const data = JSON.parse(body);
         if (!data.email) { res.writeHead(400, cors); res.end(JSON.stringify({ error: 'Email required' })); return; }

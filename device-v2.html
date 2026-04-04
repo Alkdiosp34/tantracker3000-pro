@@ -629,7 +629,7 @@ let lastPingedLat = null, lastPingedLon = null;
 let lastPosLat = null, lastPosCon = null;
 let pingTimer = null;
 let isMoving = false;
-let currentLat = null, currentLon = null, currentAcc = null, currentMph = 0;
+let currentLat = null, currentLon = null, currentAcc = null, currentMph = 0, currentHeading = null;
 
 function startGPS() {
   if (!navigator.geolocation) return;
@@ -638,11 +638,12 @@ function startGPS() {
   // We store the latest coords but don't ping on every update —
   // the adaptive timer below decides when to actually send.
   navigator.geolocation.watchPosition(pos => {
-    const { latitude:lat, longitude:lon, accuracy, speed } = pos.coords;
+    const { latitude:lat, longitude:lon, accuracy, speed, heading } = pos.coords;
     currentLat = lat;
     currentLon = lon;
     currentAcc = accuracy;
     currentMph = speed ? Math.round(speed * 2.237) : 0;
+    currentHeading = (heading !== null && !isNaN(heading)) ? Math.round(heading) : null;
 
     document.getElementById('lat').textContent = lat.toFixed(6);
     document.getElementById('lon').textContent = lon.toFixed(6);
@@ -691,6 +692,7 @@ function sendLocation() {
       type: 'location',
       lat: currentLat, lon: currentLon,
       acc: currentAcc, mph: currentMph,
+      heading: currentHeading,
       moving: isMoving,
       voltage: currentVoltage,
       ts: Date.now()
@@ -725,6 +727,7 @@ function sendFinalPing() {
       type: 'location_final',
       lat: currentLat, lon: currentLon,
       acc: currentAcc, mph: currentMph,
+      heading: currentHeading,
       voltage: currentVoltage, ts: Date.now()
     }));
   }

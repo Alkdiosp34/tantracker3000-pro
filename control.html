@@ -448,7 +448,6 @@ footer {
           <div class="telem-cell"><div class="telem-label">ACCURACY</div><div class="telem-val" id="dAcc">---</div></div>
           <div class="telem-cell"><div class="telem-label">STATUS</div><div class="telem-val" id="dMoving" style="color:var(--amber)">WAITING</div></div>
           <div class="telem-cell"><div class="telem-label">PING RATE</div><div class="telem-val" id="dPingRate" style="color:var(--muted)">--</div></div>
-          <div class="telem-cell" style="grid-column:1/-1"><div class="telem-label">BATTERY VOLTAGE</div><div class="telem-val" id="dVolt" style="color:var(--green)">--- V</div></div>
         </div>
       </div>
 
@@ -546,6 +545,8 @@ footer {
     <div class="map-overlay">
       <button class="map-btn" onclick="map.zoomIn()">＋</button>
       <button class="map-btn" onclick="map.zoomOut()">－</button>
+      <button class="map-btn" id="btnMapLayer" onclick="cycleMapLayer()" title="Change map style">🗺</button>
+      <button class="map-btn" id="btnNorthUp" onclick="toggleOrientation()" title="Toggle heading-up / north-up">⬆</button>
     </div>
 
     <div class="speed-overlay" id="speedOverlay">
@@ -579,6 +580,8 @@ footer {
   "
   onload="if(window._mapReady)window._mapReady();">
 </script>
+<!-- Leaflet rotate plugin — enables map bearing/heading-up mode -->
+<script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate-src.js"></script>
 <script>
 // ════════════════════════════════════════════════
 // CONFIG — update these before deploying
@@ -767,15 +770,118 @@ function switchTab(t) {
 // ════════════════════════════════════════════════
 // MAP INIT
 // ════════════════════════════════════════════════
-function initMap() {
-  map = L.map('map', { zoomControl:false, attributionControl:false }).setView([29.76, -95.36], 13);
-  // CartoDB Voyager — no referer restrictions, works from file:// and hosted
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
-    subdomains: 'abcd'
-  }).addTo(map);
 
-  // Car marker — green pulsing dot
+// ── Tile layer definitions ────────────────────
+const TILE_LAYERS = [
+  {
+    name: 'DARK',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    opts: { maxZoom:19, subdomains:'abcd' },
+    filter: 'invert(1) hue-rotate(180deg) brightness(0.85) saturate(0.7)'
+  },
+  {
+    name: 'SATELLITE',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    opts: { maxZoom:19 },
+    filter: 'none'
+  },
+  {
+    name: 'TOPO',
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    opts: { maxZoom:17, subdomains:'abc' },
+    filter: 'none'
+  }
+];
+let currentLayerIdx = 0;
+let activeLayer = null;
+let headingUp = false;
+let lastHeading = null;
+
+function cycleMapLayer() {
+  currentLayerIdx = (currentLayerIdx + 1) % TILE_LAYERS.length;
+  applyMapLayer();
+  localStorage.setItem('tt3k_maplayer', currentLayerIdx);
+}
+
+function applyMapLayer() {
+  const def = TILE_LAYERS[currentLayerIdx];
+  if (activeLayer) map.removeLayer(activeLayer);
+  activeLayer = L.tileLayer(def.url, def.opts).addTo(map);
+  activeLayer.setZIndex(0);
+  // Apply CSS filter to tile layer
+  const tiles = document.querySelectorAll('.leaflet-tile-pane');
+  tiles.forEach(t => t.style.filter = def.filter);
+  // Also handle after tiles load
+  activeLayer.on('load', () => {
+    document.querySelectorAll('.leaflet-tile-pane').forEach(t => t.style.filter = def.filter);
+  });
+  const btn = document.getElementById('btnMapLayer');
+  if (btn) btn.textContent = ['🌑','🛰','🗻'][currentLayerIdx];
+}
+
+function toggleOrientation() {
+  headingUp = !headingUp;
+  const btn = document.getElementById('btnNorthUp');
+  if (!headingUp) {
+    // Back to north-up — reset bearing
+    map.setBearing(0);
+    btn.textContent = '⬆';
+    btn.classList.remove('active');
+  } else {
+    btn.textContent = '🧭';
+    btn.classList.add('active');
+    // Apply last known heading immediately if we have one
+    if (lastHeading !== null) map.setBearing(lastHeading);
+  }
+  localStorage.setItem('tt3k_headingup', headingUp ? '1' : '0');
+}
+
+function updateMapBearing(heading) {
+  if (heading === null || heading === undefined) return;
+  lastHeading = heading;
+  if (headingUp) map.setBearing(heading);
+  // Rotate the car icon arrow to match heading
+  updateCarIcon(heading);
+}
+
+let carMarkerHeading = 0;
+function updateCarIcon(heading) {
+  carMarkerHeading = heading || 0;
+  const isMovingNow = document.getElementById('dMoving')?.textContent.includes('MOVING');
+  const icon = L.divIcon({
+    html: isMovingNow
+      ? `<div style="position:relative;width:24px;height:24px;transform:rotate(${heading}deg)">
+           <div style="position:absolute;inset:0;border-radius:50%;background:#00ff88;opacity:0.2;animation:ripple 2s infinite"></div>
+           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:18px solid #00ff88;filter:drop-shadow(0 0 6px #00ff88)"></div>
+         </div>
+         <style>@keyframes ripple{0%{transform:scale(1);opacity:0.2}100%{transform:scale(2.5);opacity:0}}</style>`
+      : `<div style="position:relative;width:20px;height:20px;">
+           <div style="position:absolute;inset:0;border-radius:50%;background:#00ff88;opacity:0.25;animation:ripple 2s infinite"></div>
+           <div style="position:absolute;top:3px;left:3px;width:14px;height:14px;background:#00ff88;border-radius:50%;border:2px solid #080d08;box-shadow:0 0 8px #00ff88"></div>
+         </div>
+         <style>@keyframes ripple{0%{transform:scale(1);opacity:0.25}100%{transform:scale(2.5);opacity:0}}</style>`,
+    iconSize:[24,24], iconAnchor:[12,12], className:''
+  });
+  if (carMarker) carMarker.setIcon(icon);
+}
+
+function initMap() {
+  // Check if Leaflet rotate plugin is available
+  const hasRotate = typeof L.Map.prototype.setBearing === 'function';
+
+  map = L.map('map', { zoomControl:false, attributionControl:false, rotate: hasRotate }).setView([29.76, -95.36], 13);
+
+  // Restore saved layer preference
+  const savedLayer = localStorage.getItem('tt3k_maplayer');
+  if (savedLayer !== null) currentLayerIdx = parseInt(savedLayer) || 0;
+  headingUp = localStorage.getItem('tt3k_headingup') === '1';
+  if (headingUp) {
+    const btn = document.getElementById('btnNorthUp');
+    if (btn) { btn.textContent = '🧭'; btn.classList.add('active'); }
+  }
+  applyMapLayer();
+
+  // Car marker — arrow when moving, dot when parked
   const carIcon = L.divIcon({
     html: `<div style="position:relative;width:20px;height:20px;">
       <div style="position:absolute;inset:0;border-radius:50%;background:#00ff88;opacity:0.25;animation:ripple 2s infinite"></div>
@@ -849,20 +955,19 @@ function updateCarPosition(lat, lon, mph, acc, msg) {
   document.getElementById('dLat').textContent = lat.toFixed(5);
   document.getElementById('dLon').textContent = lon.toFixed(5);
   document.getElementById('dSpd').textContent = mph + ' mph';
-  document.getElementById('dAcc').textContent = '±' + acc + 'm';
+  document.getElementById('dAcc').textContent = '±' + Math.round(acc * 3.28084) + ' ft';
   // Show movement state
   const movEl = document.getElementById('dMoving');
   if (movEl) {
     movEl.textContent = (msg && msg.moving) ? '▶ MOVING' : '■ PARKED';
     movEl.style.color = (msg && msg.moving) ? 'var(--green)' : 'var(--amber)';
   }
-  // Show voltage if included in the ping
-  if (msg && msg.voltage) {
-    const v = parseFloat(msg.voltage);
-    const vEl = document.getElementById('dVolt');
-    vEl.textContent = v.toFixed(1) + ' V';
-    vEl.style.color = v >= 12.4 ? 'var(--green)' : v >= 12.0 ? 'var(--amber)' : 'var(--red)';
+
+  // Update heading / map bearing if device sent it
+  if (msg && msg.heading !== null && msg.heading !== undefined) {
+    updateMapBearing(msg.heading);
   }
+
   pingsRx++;
   document.getElementById('fPings').textContent = 'PINGS: ' + pingsRx;
   const rateEl = document.getElementById('dPingRate');
